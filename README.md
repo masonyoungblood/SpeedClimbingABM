@@ -141,7 +141,7 @@ along with a vector of reference times for the amount of time spent on
 each hold. For now the beta vectors will start out as all TRUE, so that
 all climbers start out using every hold in the route. The reference
 times will be drawn from truncated normal distributions with a lower
-bound at 0, a mean of the initial mean speed (let’s say 20 seconds)
+bound at 0, a mean of the initial mean speed (let’s say 18 seconds)
 divided by the number of holds on the route, and a standard deviation of
 the mean divided by a parameter that controls the initial variation in
 times across holds. Here is an example of how the beta and reference
@@ -152,7 +152,7 @@ time vectors are intialized.
 n_holds <- 20
 
 #set initial mean speed
-init_mean <- 20
+init_mean <- 18
 
 #set probability of initial beta holds at 1 (all holds on the route)
 beta_true_prob <- 1
@@ -177,9 +177,9 @@ beta
 ref_times
 ```
 
-    ##  [1] 1.1220552 0.9902822 0.9048368 0.9206747 1.0805348 1.1248050 0.8082014
-    ##  [8] 1.0841870 0.8132262 1.0091081 0.9177684 1.0258905 1.0037559 1.0447402
-    ## [15] 0.9787296 0.8168301 0.9025306 1.1172947 1.0858090 0.9697394
+    ##  [1] 0.8548070 0.9360130 0.9535056 0.7700459 0.9713559 1.0300125 0.8547929
+    ##  [8] 0.9037143 0.9668870 0.9482864 0.9753341 0.9218185 1.0021346 0.8701689
+    ## [15] 0.8965266 0.8413457 1.0854928 0.9162729 0.9662464 0.9242109
 
 In each timestep, each climber has the same `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
