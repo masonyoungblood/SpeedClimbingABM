@@ -177,9 +177,9 @@ beta
 ref_times
 ```
 
-    ##  [1] 0.8548070 0.9360130 0.9535056 0.7700459 0.9713559 1.0300125 0.8547929
-    ##  [8] 0.9037143 0.9668870 0.9482864 0.9753341 0.9218185 1.0021346 0.8701689
-    ## [15] 0.8965266 0.8413457 1.0854928 0.9162729 0.9662464 0.9242109
+    ##  [1] 0.9641434 0.9046872 0.9516921 0.9903176 0.7281749 0.7279846 0.9922286
+    ##  [8] 0.9368182 0.7314282 0.8235588 0.9658065 0.7373008 1.0202630 0.8934016
+    ## [15] 0.9518878 0.8365827 0.9235830 0.8164345 0.7016657 0.8845892
 
 In each timestep, each climber has the same `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
@@ -220,7 +220,10 @@ the current best as well as how long they’ve been in the sport, so older
 climbers with slower times are more likely to leave. Specifically it is
 their `current_record` divided by the minimum `current_record` in the
 population multiplied by `age`, or the number of timesteps that they
-have been in the sport. See `SpeedClimbingABM.R` for details.
+have been in the sport. Each new climber that enters the sport inherits
+information from two randomly sampled climbers from that timestep:
+`ref_times` and `beta` come from one, and `dist` comes from another. See
+`SpeedClimbingABM.R` for details.
 
 ## Test Run
 
