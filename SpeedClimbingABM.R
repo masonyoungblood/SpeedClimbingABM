@@ -36,7 +36,10 @@ athletic_improvement <- function(dist_range, dist_var, dist, rate){
 }
 
 #function for the model
-SpeedClimbingABM <- function(n, t, growth_rate, leave_prob, init_mean, n_holds, beta_true_prob, learn_prob, n_top, innov_prob, adj_poss, rate_sd, sd_divider){
+SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob, learn_prob, n_top, innov_prob, adj_poss, rate_sd, sd_divider, bw = 1, ylim = 0.3){
+  #set t parameter
+  t <- length(n)
+  
   #colors for plotting after each timepoint
   colors <- rainbow(t*1.25) #times 1.2 so it doesn't loop back around
   
@@ -55,22 +58,22 @@ SpeedClimbingABM <- function(n, t, growth_rate, leave_prob, init_mean, n_holds, 
   dist <- dbeta(dist_range, beta_params$alpha, beta_params$beta) #set dist
   dist <- (length(dist_range)*dist)/sum(dist) #normalize dist
   
-  #initialize ref times for everyone
-  ref_times <- truncnorm::rtruncnorm(n_holds, a = 0, mean = init_mean/n_holds, sd = (init_mean/n_holds)/sd_divider)
+  #initialize ref times from observed times
+  ref_times <- lapply(1:length(init_times), function(x){truncnorm::rtruncnorm(n_holds, a = 0, mean = (init_times[x])/n_holds, sd = ((init_times[x])/n_holds)/sd_divider)})
   
   #initialize data table of agents
-  climbers <- data.table::data.table(age = rep(1, n),
-                                     beta = lapply(1:n, function(x){beta}),
-                                     ref_times = lapply(1:n, function(x){ref_times}),
-                                     dists = lapply(1:n, function(x){dist}),
-                                     rate = truncnorm::rtruncnorm(n, a = rate_range[1], b = rate_range[2], mean = rate_range[2], sd = rate_sd),
-                                     current_record = rep(NA, n))
+  climbers <- data.table::data.table(age = rep(1, n[1]),
+                                     beta = lapply(1:(n[1]), function(x){beta}),
+                                     ref_times = ref_times,
+                                     dists = lapply(1:(n[1]), function(x){dist}),
+                                     rate = truncnorm::rtruncnorm(n[1], a = rate_range[1], b = rate_range[2], mean = rate_range[2], sd = rate_sd),
+                                     current_record = rep(NA, n[1]))
   
   #store initial records before iterating over time
   climbers$current_record <- sapply(1:nrow(climbers), function(x){sum((climbers$ref_times[[x]]*sample(dist_range, n_holds, prob = climbers$dists[[x]], replace = TRUE))[climbers$beta[[x]]])})
   
   #iterate over time
-  for(i in 1:t){
+  for(i in 1:(t-1)){
     #get top n climbers for each climber to compare themselves with
     top_climbers <- order(climbers$current_record)[1:n_top]
     
@@ -145,8 +148,8 @@ SpeedClimbingABM <- function(n, t, growth_rate, leave_prob, init_mean, n_holds, 
         beta_b[beta_to_flip] <- !beta_b[beta_to_flip]
         
         #resample adjacent ref_times
-        ref_times_b[ok_holds[which(ok_holds == beta_to_flip)-1]] <- truncnorm::rtruncnorm(1, a = 0, mean = init_mean/n_holds, sd = (init_mean/n_holds)/sd_divider)
-        ref_times_b[ok_holds[which(ok_holds == beta_to_flip)+1]] <- truncnorm::rtruncnorm(1, a = 0, mean = init_mean/n_holds, sd = (init_mean/n_holds)/sd_divider)
+        ref_times_b[ok_holds[which(ok_holds == beta_to_flip)-1]] <- truncnorm::rtruncnorm(1, a = 0, mean = mean(init_times)/n_holds, sd = (mean(init_times)/n_holds)/sd_divider)
+        ref_times_b[ok_holds[which(ok_holds == beta_to_flip)+1]] <- truncnorm::rtruncnorm(1, a = 0, mean = mean(init_times)/n_holds, sd = (mean(init_times)/n_holds)/sd_divider)
         
         #decide which is better
         sum_a <- sum(ref_times_a[beta_a])
@@ -168,21 +171,18 @@ SpeedClimbingABM <- function(n, t, growth_rate, leave_prob, init_mean, n_holds, 
     
     if(i == 1){
       par(mar = c(4, 4, 1, 1))
-      plot(density(climbers$current_record), xlab = "Time (s)", main = "", xlim = c(0, init_mean), ylim = c(0, 0.5))
+      plot(density(climbers$current_record, bw = bw), xlab = "Time (s)", main = "", xlim = c(0, mean(init_times)), ylim = c(0, ylim))
     }
-    if(i > 1){lines(density(climbers$current_record)$x, density(climbers$current_record)$y, type = "l", col = colors[i-1])}
-    
-    #save current pop size
-    current_n <- nrow(climbers)
+    if(i > 1){lines(density(climbers$current_record, bw = bw)$x, density(climbers$current_record, bw = bw)$y, type = "l", col = colors[i-1])}
     
     #age up each climber
     climbers$age <- climbers$age+1
     
     #simulate climbers leaving the sport, where probability of leaving the sport is based function of age and slowness of current record
-    climbers <- climbers[-sample(1:nrow(climbers), nrow(climbers)*leave_prob, prob = (climbers$current_record/min(climbers$current_record))*climbers$age), ]
+    climbers <- climbers[-sample(1:nrow(climbers), nrow(climbers)*(leave_prob[i]), prob = (climbers$current_record/min(climbers$current_record))*climbers$age), ]
     
-    #get number of climbers to add, based on the pre-leaving population size, growth rate, and number of climbers who left
-    add_n <- current_n+(current_n*growth_rate)-nrow(climbers)
+    #get number of climbers to add
+    add_n <- n[i+1]-nrow(climbers)
     
     #get indices of climbers whose beta and ref times will be randomly sampled for new climbers
     add_inds <- sample(1:nrow(climbers), add_n, replace = TRUE)
@@ -202,7 +202,7 @@ SpeedClimbingABM <- function(n, t, growth_rate, leave_prob, init_mean, n_holds, 
     climbers <- data.table::rbindlist(list(climbers, new_climbers))
     
     #remove objects
-    rm(list = c("top_climbers", "current_n", "add_n", "add_inds", "new_climbers"))
+    rm(list = c("top_climbers", "add_n", "add_inds", "new_climbers"))
   }
   
   return(climbers)

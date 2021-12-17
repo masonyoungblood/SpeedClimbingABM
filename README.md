@@ -130,7 +130,7 @@ Now, how do we use these beta distributions in combination with hold
 sequences? First, let’s look at a diagram of the standardized speed
 wall.
 
-<img src="https://walltopia.com/images/climbing_walls/speedwall-sketch.png" width="50%" style="display: block; margin: auto;" />
+<img src="https://www.kindpng.com/picc/m/592-5929143_speed-climbing-wall-sketch-speed-climbing-route-map.png" width="65%" style="display: block; margin: auto;" />
 
 As you can see, the standardized speed wall has a total of 20 hand holds
 and 11 foot holds. Speed climbers often “smear” their feet on the wall
@@ -141,18 +141,18 @@ along with a vector of reference times for the amount of time spent on
 each hold. For now the beta vectors will start out as all TRUE, so that
 all climbers start out using every hold in the route. The reference
 times will be drawn from truncated normal distributions with a lower
-bound at 0, a mean of the initial mean speed (let’s say 18 seconds)
+bound at 0, a mean of an initial climbing time (let’s say 18 seconds)
 divided by the number of holds on the route, and a standard deviation of
 the mean divided by a parameter that controls the initial variation in
 times across holds. Here is an example of how the beta and reference
-time vectors are intialized.
+time vectors are initialized.
 
 ``` r
 #set number of holds
 n_holds <- 20
 
 #set initial mean speed
-init_mean <- 18
+init_time <- 18
 
 #set probability of initial beta holds at 1 (all holds on the route)
 beta_true_prob <- 1
@@ -164,7 +164,7 @@ sd_divider <- 10
 beta <- sample(c(TRUE, FALSE), n_holds, prob = c(beta_true_prob, 1-beta_true_prob), replace = TRUE)
 
 #initialize ref times
-ref_times <- truncnorm::rtruncnorm(n_holds, a = 0, mean = init_mean/n_holds, sd = (init_mean/n_holds)/sd_divider)
+ref_times <- truncnorm::rtruncnorm(n_holds, a = 0, mean = init_time/n_holds, sd = (init_time/n_holds)/sd_divider)
 
 #print the vectors
 beta
@@ -177,9 +177,9 @@ beta
 ref_times
 ```
 
-    ##  [1] 0.9641434 0.9046872 0.9516921 0.9903176 0.7281749 0.7279846 0.9922286
-    ##  [8] 0.9368182 0.7314282 0.8235588 0.9658065 0.7373008 1.0202630 0.8934016
-    ## [15] 0.9518878 0.8365827 0.9235830 0.8164345 0.7016657 0.8845892
+    ##  [1] 0.8038051 0.8593267 0.7700473 0.9091619 1.0854914 0.9513782 0.8701519
+    ##  [8] 0.9408317 0.8804831 0.9408589 0.9188010 0.9049235 0.8022548 0.9892346
+    ## [15] 0.5895793 0.9927162 0.7099631 0.7919213 0.8809420 0.9009371
 
 In each timestep, each climber has the same `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
@@ -190,11 +190,12 @@ allowed in the model (to simulate the fact that skipping three holds in
 a row and still being able to complete the route is *extremely*
 unlikely). When a boolean flip occurs (i.e. when a hold is added to or
 dropped from the beta) the `ref_times` of the adjacent holds are
-resampled, since the amount of time spent on the adjacent holds is
-dependent on the presence of the added/dropped hold. When each climber
-innovates, they compare the overall route time for their current beta
-with the innovated beta, and if the innovated beta is better then they
-overwrite their current beta. See `SpeedClimbingABM.R` for details.
+resampled (based on the mean initial climbing times of the population),
+since the amount of time spent on the adjacent holds is dependent on the
+presence of the added/dropped hold. When each climber innovates, they
+compare the overall route time for their current beta with the innovated
+beta, and if the innovated beta is better then they overwrite their
+current beta. See `SpeedClimbingABM.R` for details.
 
 ## Social Learning
 
@@ -210,15 +211,15 @@ details.
 ## Dynamic Population Size
 
 We also allow the population size to grow over time. For now we just
-have an initial population size of `n` climbers, a growth rate of
-`growth_rate`, and a probability of leaving the sport of `leave_prob`.
-Basically, at the end of each timestep a random subset of climbers leave
-the sport, and new climbers enter the sport to bring the population up
-to the size specified by `growth_rate`. The probability of a climber
-leaving the sport is a function of how far their current record is from
-the current best as well as how long they’ve been in the sport, so older
-climbers with slower times are more likely to leave. Specifically it is
-their `current_record` divided by the minimum `current_record` in the
+have a dynamic population size of `n` climbers and the probability
+`leave_prob` of leaving the sport in each timestep. Basically, at the
+end of each timestep a random subset of climbers leave the sport, and
+new climbers enter the sport to bring the population up to the size
+specified by `n`. The probability of a climber leaving the sport is a
+function of how far their current record is from the current best as
+well as how long they’ve been in the sport, so older climbers with
+slower times are more likely to leave. Specifically it is their
+`current_record` divided by the minimum `current_record` in the
 population multiplied by `age`, or the number of timesteps that they
 have been in the sport. Each new climber that enters the sport inherits
 information from two randomly sampled climbers from that timestep:
@@ -234,21 +235,51 @@ the functions in this file for details.
 source("SpeedClimbingABM.R")
 ```
 
-Let’s do a test run of this model with a population size of 200 over 15
-timesteps with a growth rate of 5%, with a 0.2 probability of climbers
-leaving the sport during each timestep, an initial climbing time of 18
-seconds across 20 holds where the climbers start out using every hold, a
-0.2 probability of learning from the top 50 climbers, and a 0.1
-probability of innovation where no more than 3 adjacent holds can be
-skipped.
+Let’s do a test run of this model based on the observed data for male
+climbers.
 
 ``` r
-output <- SpeedClimbingABM(n = 200, t = 15, growth_rate = 0.05, leave_prob = 0.2, init_mean = 18,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 50,
-                           innov_prob = 0.1, adj_poss = 3, rate_sd = 5, sd_divider = 10)
+load("data.RData")
+
+#subset to males
+data <- data[which(data$gender == "M"), ]
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+First we need the observed population sizes, leave probabilities, and
+initial climbing times.
+
+``` r
+#get years
+years <- sort(unique(data$year))
+
+#population sizes
+n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
+
+#leave probabilities
+leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
+  temp_a <- data[which(data$year == years[x]), ]
+  temp_b <- data[which(data$year == years[x+1]), ]
+  length(which(!(temp_a$athlete %in% temp_b$athlete)))/nrow(temp_a)
+}))
+
+#initial climbing times
+init_times <- data[which(data$year == years[1]), ]$time
+```
+
+Now let’s run the model with an initial population size of 53, a 0.4
+probability of learning from the top 20 climbers, and a 0.2 probability
+of innovation where no more than 3 adjacent holds can be skipped. The
+last two parameters, `bw` and `ylim`, control the density bandwidth and
+y-axis limit in the plot, respectively.
+
+``` r
+output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.4, n_top = 20,
+                           innov_prob = 0.2, adj_poss = 3, rate_sd = 10, sd_divider = 2,
+                           bw = 0.6, ylim = 0.35)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
