@@ -177,9 +177,9 @@ beta
 ref_times
 ```
 
-    ##  [1] 0.8038051 0.8593267 0.7700473 0.9091619 1.0854914 0.9513782 0.8701519
-    ##  [8] 0.9408317 0.8804831 0.9408589 0.9188010 0.9049235 0.8022548 0.9892346
-    ## [15] 0.5895793 0.9927162 0.7099631 0.7919213 0.8809420 0.9009371
+    ##  [1] 0.9387101 0.8832999 0.8705174 0.8625977 0.9104501 0.9942316 1.0049507
+    ##  [8] 0.8532675 1.0215270 0.7652646 0.8269890 0.9790181 0.9897498 0.7941204
+    ## [15] 0.9520714 0.9264057 0.8286055 0.9467744 0.8650441 0.9113878
 
 In each timestep, each climber has the same `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
@@ -268,19 +268,42 @@ init_times <- data[which(data$year == years[1]), ]$time
 
 Now let’s run the model with an initial population size of 53, a 0.4
 probability of learning from the top 20 climbers, and a 0.2 probability
-of innovation where no more than 3 adjacent holds can be skipped. The
-last two parameters, `bw` and `ylim`, control the density bandwidth and
-y-axis limit in the plot, respectively.
+of innovation where no more than 3 adjacent holds can be skipped. `bw`
+and `ylim`, control the density bandwidth and y-axis limit in the plot,
+respectively. `sum_stats` controls whether summary statistics are
+calculated from the output, `plot` controls whether the output is
+plotted, and `bw` and `ylim` control the density bandwidth and y-axis
+limit of the plot, respectively.
 
 ``` r
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.4, n_top = 20,
                            innov_prob = 0.2, adj_poss = 3, rate_sd = 10, sd_divider = 2,
-                           bw = 0.6, ylim = 0.35)
+                           sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
-timestep.
+timestep. The output of this ABM a table of the summary statistics
+(quantiles) from each timestep.
+
+``` r
+output
+```
+
+    ##              0%       25%       50%       75%     100%
+    ##  [1,] 13.454581 20.771448 25.589752 33.505386 58.66818
+    ##  [2,] 12.720107 17.488427 19.021518 26.151111 46.65112
+    ##  [3,] 11.920202 13.666286 16.749217 17.685568 26.74655
+    ##  [4,] 11.669221 13.119557 14.279140 17.132633 26.10308
+    ##  [5,]  8.574101 11.574143 12.639016 14.142371 25.45901
+    ##  [6,]  9.073864  9.765696 10.492791 11.940072 24.85083
+    ##  [7,]  8.270185  9.576378 10.137087 10.958044 17.44503
+    ##  [8,]  7.914282  9.555591  9.935443 10.377830 13.15475
+    ##  [9,]  6.342885  8.224291  9.150969  9.953345 13.08990
+    ## [10,]  6.373875  7.683168  8.220248  9.263368 12.06042
+    ## [11,]  5.716671  7.243964  7.867625  8.392990 11.86363
+    ## [12,]  5.150947  7.035923  7.537887  8.086402 11.80480
+    ## [13,]  5.080622  6.711418  7.203521  7.971198 12.29835

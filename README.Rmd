@@ -222,13 +222,17 @@ leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
 init_times <- data[which(data$year == years[1]), ]$time
 ```
 
-Now let's run the model with an initial population size of `r n[1]`, a 0.4 probability of learning from the top 20 climbers, and a 0.2 probability of innovation where no more than 3 adjacent holds can be skipped. The last two parameters, `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively.
+Now let's run the model with an initial population size of `r n[1]`, a 0.4 probability of learning from the top 20 climbers, and a 0.2 probability of innovation where no more than 3 adjacent holds can be skipped. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
 
 ```{r}
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.4, n_top = 20,
                            innov_prob = 0.2, adj_poss = 3, rate_sd = 10, sd_divider = 2,
-                           bw = 0.6, ylim = 0.35)
+                           sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-In the above plot, each distribution (from right to left) is the distribution of `current_records` for climbers in the population in each timestep.
+In the above plot, each distribution (from right to left) is the distribution of `current_records` for climbers in the population in each timestep. The output of this ABM a table of the summary statistics (quantiles) from each timestep.
+
+```{r}
+output
+```
