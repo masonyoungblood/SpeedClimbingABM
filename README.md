@@ -12,7 +12,7 @@ beta.
 ## Athletic Improvement
 
 The biggest challenge in developing this model was figuring out how to
-simulation athletic improvement. I ended up assigning each climber a
+simulate athletic improvement. I ended up assigning each climber a
 beta distribution that changes over time and controls the amount of time
 spent on each hold. In order to control the shape of the beta
 distribution, I used the [following
