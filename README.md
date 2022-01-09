@@ -35,7 +35,7 @@ est_beta_params <- function(mean, var){
 ```
 
 With this function, we can easily construct beta distributions for each
-climber. Here is a plotted exampe of what this looks like. This starting
+climber. Here is a plotted example of what this looks like. This starting
 distribution is heavily skewed towards 1, but as the distribution shifts
 to the left the amount of time spent on each hold, and thus the overall
 climbing time, will get lower and lower.
