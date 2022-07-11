@@ -12,121 +12,87 @@ beta.
 ## Athletic Improvement
 
 The biggest challenge in developing this model was figuring out how to
-simulation athletic improvement. I ended up assigning each climber a
-beta distribution that changes over time and controls the amount of time
-spent on each hold. In order to control the shape of the beta
-distribution, I used the [following
-function](https://stats.stackexchange.com/questions/12232/calculating-the-parameters-of-a-beta-distribution-using-the-mean-and-variance)
-that converts a specified mean and variance into alpha and beta
-parameters.
+simulate athletic improvement. I ended up assigning each climber a
+truncated normal distribution from 0 to 1 that changes over time and
+controls the amount of time spent on each hold. Here is a plotted
+example of what this looks like. The example starting distribution has a
+mean of 1 and a standard deviation of 0.1, but as the distribution
+shifts to the left the amount of time spent on each hold, and thus the
+overall climbing time, will get lower and lower.
 
 ``` r
-#function for calculating beta parameters
-est_beta_params <- function(mean, var){
-  #calculate alpha from mean and var
-  alpha <- (((1-mean)/var)-(1/mean))*(mean^2)
-  
-  #calculate beta from alpha and mean
-  beta <- alpha*((1/mean)-1)
-  
-  #return alpha and beta
-  return(params = list(alpha = alpha, beta = beta))
-}
-```
+#store distribution statistics (mean and sd)
+dist_stats <- c(1, 0.1)
 
-With this function, we can easily construct beta distributions for each
-climber. Here is a plotted exampe of what this looks like. This starting
-distribution is heavily skewed towards 1, but as the distribution shifts
-to the left the amount of time spent on each hold, and thus the overall
-climbing time, will get lower and lower.
-
-``` r
 #generate range
-range <- seq(0.01, 0.99, length.out = 1000)
+range <- seq(0, 1, by = 0.001)
 
-#calculate parameters of beta dist
-mean <- 0.99
-var <- 0.001
-beta_params <- est_beta_params(mean, var)
-
-#construct and normalize dist
-dist <- dbeta(range, beta_params$alpha, beta_params$beta)
-dist <- (length(range)*dist)/sum(dist)
+#construct and normalize dist so max is 1
+dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
+dist <- dist/max(dist)
 
 #plot it
 par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density")
+plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
+```
+
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+In order to simulate improvement in this distribution, we will randomly
+draw a point sample and use it as the new mean of the normal
+distribution in the next timestep. In order to “hit the brakes” on
+improvement, the standard deviation of each new distribution will be the
+`init_sd` multiplied by the new mean raised to the power of `brakes`.
+For this first example we’ll use `init_sd` = 0.1 and `brakes` = 2.
+
+``` r
+#set seed
+set.seed(1234)
+
+#set initial sd and brakes values
+init_sd <- 0.1
+brakes <- 2
+
+#store distribution statistics (mean and sd)
+dist_stats <- c(1, init_sd)
+
+#begin plot
+par(mar = c(4, 4, 1, 1))
+plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
+
+#colors for plotting after each timepoint
+colors <- rainbow((20-1)*1.25) #times 1.2 so it doesn't loop back around
+
+#iterate
+for(i in 1:20){
+  #replace mean with point sample multiplied by improve
+  dist_stats[1] <- truncnorm::rtruncnorm(1, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
+  
+  #replace sd with initial sd multiplied by the new mean to the power of brakes
+  dist_stats[2] <- init_sd*(dist_stats[1]^brakes)
+  
+  #create new dist to plot normalize it
+  dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
+  dist <- dist/max(dist)
+  
+  #plot new line
+  lines(range, dist, type = "l", col = colors[i])
+}
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-In order to simulate improvement in this distribution, we will construct
-an exponential distribution with a max bound drawn from the current
-distribution, and randomly draw the new mean of the distribution from
-it. Below is an example of an exponential distribution (in red) drawn
-with a max bound drawn from a beta distribution (in blue).
+Now let’s set increase `init_sd` to 0.4 and `brakes` to 8 and see what
+happens.
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
-If we iterate this out, we can see that the distribution shifts to the
-left over time. In this case, the rate of the exponential curves
-controls the rate of athletic improvement, where larger values mean that
-the distributions shifts more slowly over time. For now, let’s set the
-rate to 100. Note that, when calculating the parameters of the new beta
-distribution, the variance is multiplied by the peak of the current
-distribution to the power of 2, in order to “hit the brakes” on
-directional improvement.
-
-``` r
-#set rate of exp curves when sampling
-rate <- 100
-
-#begin plot
-par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density")
-
-#iterate
-for(i in 1:20){
-  #sample the max bound of exp distribution from the current distribution
-  sampled_max <- sample(range, 1, prob = dist)
-  
-  #sample the exp distribution
-  exp <- range[which(range <= sampled_max)]^rate
-  
-  #draw random point sample from exp distribution
-  point_sample <- sample(range[which(range <= sampled_max)], 1, prob = exp)
-  
-  #create new dist with point sample as the mean
-  beta_params <- est_beta_params(point_sample, var*(range[which.max(dist)]^2))
-  dist <- dbeta(range, beta_params$alpha, beta_params$beta)
-  
-  #normalize it
-  dist <- (length(range)*dist)/sum(dist)
-  
-  #plot new line
-  lines(range, dist, type = "l", col = i+1)
-  
-  #remove temporary objects
-  rm(list = c("sampled_max", "exp", "point_sample", "beta_params"))
-}
-```
-
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
-
-Now let’s set the rate to 20 and see what happens.
-
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
-
-As you can see a lower rate parameter for the exponential distribution
-causes athletic improvement to happen at a faster rate over time, but
-the rate of improvement slows down over time because how how we are
-handling the variance. If we assign each climber a different rate
-parameter for the exponential distributions then we can model variation
-in climbers’ athletic ability.
+As you can see, we can get a wide range of outcomes by varying these two
+simple parameters.
 
 ## Beta & Reference Times
 
-Now, how do we use these beta distributions in combination with hold
+Now, how do we use these distributions in combination with hold
 sequences? First, let’s look at a diagram of the standardized speed
 wall.
 
@@ -137,15 +103,15 @@ and 11 foot holds. Speed climbers often “smear” their feet on the wall
 or use hand holds for feet, so we will only be modeling the time spent
 on hand holds. Each climber will be initialized with a vector of their
 beta, or a TRUE/FALSE for whether they use each hand hold in the route,
-along with a vector of reference times for the amount of time spent on
-each hold. For now the beta vectors will start out as all TRUE, so that
-all climbers start out using every hold in the route. The reference
-times will be drawn from truncated normal distributions with a lower
-bound at 0, a mean of an initial climbing time (let’s say 18 seconds)
-divided by the number of holds on the route, and a standard deviation of
-the mean divided by a parameter that controls the initial variation in
-times across holds. Here is an example of how the beta and reference
-time vectors are initialized.
+along with a vector of sequence ratios. The sequence ratios will be
+drawn from a truncated normal distribution with a lower bound at 0, a
+mean of 1, and a standard deviation parameter that controls the initial
+variation in times across holds. The actual amount of time spent on each
+hold, then, will be these sequence ratios multiplied by an initial
+climbing time (let’s say 18 seconds) divided by the number of holds. For
+now the beta vectors will start out as all TRUE, so that all climbers
+start out using every hold in the route. Here is an example of how the
+beta and sequence ratio vectors are initialized.
 
 ``` r
 #set number of holds
@@ -157,16 +123,16 @@ init_time <- 18
 #set probability of initial beta holds at 1 (all holds on the route)
 beta_true_prob <- 1
 
-#set parameter controlling the SD of ref times
-sd_divider <- 10
+#set parameter controlling the SD of sequence ratios
+sd_multiplier <- 0.5
 
 #initialize starting beta
 beta <- sample(c(TRUE, FALSE), n_holds, prob = c(beta_true_prob, 1-beta_true_prob), replace = TRUE)
 
-#initialize ref times
-ref_times <- truncnorm::rtruncnorm(n_holds, a = 0, mean = init_time/n_holds, sd = (init_time/n_holds)/sd_divider)
+#initialize sequence ratios
+seq_ratios <- truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier)
 
-#print the vectors
+#print the beta and climbing time vectors
 beta
 ```
 
@@ -174,14 +140,30 @@ beta
     ## [16] TRUE TRUE TRUE TRUE TRUE
 
 ``` r
-ref_times
+(init_time/n_holds)*seq_ratios
 ```
 
-    ##  [1] 0.9387101 0.8832999 0.8705174 0.8625977 0.9104501 0.9942316 1.0049507
-    ##  [8] 0.8532675 1.0215270 0.7652646 0.8269890 0.9790181 0.9897498 0.7941204
-    ## [15] 0.9520714 0.9264057 0.8286055 0.9467744 0.8650441 0.9113878
+    ##  [1] 1.39603390 0.68598311 0.58075198 0.67443387 0.16690794 0.37457133
+    ##  [7] 0.29655306 0.76756776 0.69034611 1.55227332 0.41911077 0.51508591
+    ## [13] 0.77371965 0.45254697 0.46416856 0.40170681 0.33660635 0.66427735
+    ## [19] 0.67641752 0.08728593
 
-In each timestep, each climber has the same `innov_prob` probability of
+This `sd_multiplier` value of 0.5 generates a distribution of times per
+hold that is similar to the example distribution in [Reveret et
+al. (2020)](https://www.frontiersin.org/articles/10.3389/fpsyg.2020.02188/full)
+(see below), and is close to the variation in times per hold observed in
+lead climbing [(Seifert et al.,
+2020)](https://www.tandfonline.com/doi/full/10.1080/14763141.2020.1830161).
+A more recent study that estimated times per hold for two high-level
+climbers in the 2019 IFSC World Cup suggests that an `sd_multiplier`
+value of 0.33 may be more appropriate [(Pandurevic et al.,
+2022)](https://www.mdpi.com/1424-8220/22/6/2251), but in exploratory
+analyses the posterior for this parameter converged to 0.5. We will make
+a simplifying assumption and use 0.5 for all of our simulations.
+
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+In each timestep, each climber has a certain `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
 case flipping one of the booleans of the `beta` vector from TRUE to
 FALSE (or vice versa). Not all boolean flips are possible. The parameter
@@ -189,7 +171,7 @@ FALSE (or vice versa). Not all boolean flips are possible. The parameter
 allowed in the model (to simulate the fact that skipping three holds in
 a row and still being able to complete the route is *extremely*
 unlikely). When a boolean flip occurs (i.e. when a hold is added to or
-dropped from the beta) the `ref_times` of the adjacent holds are
+dropped from the beta) the `seq_ratios` of the adjacent holds are
 resampled (based on the mean initial climbing times of the population),
 since the amount of time spent on the adjacent holds is dependent on the
 presence of the added/dropped hold. When each climber innovates, they
@@ -199,13 +181,13 @@ current beta. See `SpeedClimbingABM.R` for details.
 
 ## Social Learning
 
-In each timestep, each climber also has the same `learn_prob`
+In each timestep, each climber also has a certain `learn_prob`
 probability of copying the beta of another climber. When a climber
 copies another climber, they only have access to the top `n_top` fastest
 climbers in the current timestep. They “try out” all of the betas of the
 fastest climbers that are different from their own beta, and if one of
 them yields a faster time then they overwrite their current `beta` and
-`ref_times` with those of better beta. See `SpeedClimbingABM.R` for
+`seq_ratios` with those of better beta. See `SpeedClimbingABM.R` for
 details.
 
 ## Dynamic Population Size
@@ -216,15 +198,40 @@ have a dynamic population size of `n` climbers and the probability
 end of each timestep a random subset of climbers leave the sport, and
 new climbers enter the sport to bring the population up to the size
 specified by `n`. The probability of a climber leaving the sport is a
-function of how far their current record is from the current best as
-well as how long they’ve been in the sport, so older climbers with
-slower times are more likely to leave. Specifically it is their
-`current_record` divided by the minimum `current_record` in the
-population multiplied by `age`, or the number of timesteps that they
-have been in the sport. Each new climber that enters the sport inherits
-information from two randomly sampled climbers from that timestep:
-`ref_times` and `beta` come from one, and `dist` comes from another. See
-`SpeedClimbingABM.R` for details.
+function of how far their current record is from the current best among
+climbers of the same gender as well as how long they’ve been in the
+sport, so older climbers with slower times are more likely to leave.
+Specifically it is their `current_record` divided by the minimum
+`current_record` in the population multiplied by `age`, or the number of
+timesteps that they have been in the sport. Each new climber that enters
+the sport inherits information from two randomly sampled climbers from
+that timestep: `seq_ratios` and `beta` come from one, and `dist` comes
+from another. See `SpeedClimbingABM.R` for details.
+
+## Interaction Effects
+
+For our study, we want to add some interaction effects between
+innovation, social learning, ranking, and population size. More
+specifically, we want to innovation and social learning change with
+climbers’ current rankings and with population size. To do this, we will
+adjust the mean innovation and social learning rates of the population
+with the following two equations for innovation and social learning,
+respectively:
+
+*μ* = *μ*<sub>*a**v**g*</sub> + (*μ*<sub>*a**v**g*</sub> \* *t*<sub>*n**o**r**m*</sub> \* *ϕ*) + (*μ*<sub>*a**v**g*</sub> \* *p*<sub>*n**o**r**m*</sub> \* *ω*)
+
+*λ* = *λ*<sub>*a**v**g*</sub> + (*λ*<sub>*a**v**g*</sub> \* *t*<sub>*n**o**r**m*</sub> \* *ϵ*) + (*λ*<sub>*a**v**g*</sub> \* *p*<sub>*n**o**r**m*</sub> \* *σ*)
+
+In each case there are three parameters in play. For innovation (*μ*)
+there is the population average (*μ*<sub>*a**v**g*</sub>), the effect of
+a climber’s record time (*ϕ*), and the effect of population size (*ω*).
+The effects of time and population size are computed as follows: (1) all
+values are collected and normalize to be between -0.5 and 0.5 (to
+prevent *μ* from taking a value that is negative or greater than 1), (2)
+the normalized values are multiplied by number between -1 and 1, where
+the sign and absolute value control the direction and strength of the
+effect, respectively, and (3) the values are the multiplied by the
+innovation rate. Social learning is computed identically.
 
 ## Test Run
 
@@ -235,14 +242,12 @@ the functions in this file for details.
 source("SpeedClimbingABM.R")
 ```
 
-Let’s do a test run of this model based on the observed data for male
-climbers.
+Let’s do a test run of this model based on the observed data from the
+women in the population.
 
 ``` r
 load("data.RData")
-
-#subset to males
-data <- data[which(data$gender == "M"), ]
+data <- data[which(data$gender == "W"), ]
 ```
 
 First we need the observed population sizes, leave probabilities, and
@@ -264,11 +269,14 @@ leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
 
 #initial climbing times
 init_times <- data[which(data$year == years[1]), ]$time
+
+#get initial sd
+init_sd <- sd(data$time[which(data$year == sort(unique(data$year))[1])]/mean(data$time[which(data$year == sort(unique(data$year))[1])]))
 ```
 
-Now let’s run the model with an initial population size of 53, a 0.4
+Now let’s run the model with an initial population size of 37, a 0.2
 probability of learning from the top 20 climbers, and a 0.2 probability
-of innovation where no more than 3 adjacent holds can be skipped. `bw`
+of innovation where no more than 2 adjacent holds can be skipped. `bw`
 and `ylim`, control the density bandwidth and y-axis limit in the plot,
 respectively. `sum_stats` controls whether summary statistics are
 calculated from the output, `plot` controls whether the output is
@@ -276,13 +284,24 @@ plotted, and `bw` and `ylim` control the density bandwidth and y-axis
 limit of the plot, respectively.
 
 ``` r
+#store starting time
+start <- Sys.time()
+
+#run model
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.4, n_top = 20,
-                           innov_prob = 0.2, adj_poss = 3, rate_sd = 10, sd_divider = 2,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
+                           innov_prob = 0.2, adj_poss = 2, init_sd = 0.2, brakes = 4,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+#print run time
+Sys.time() - start
+```
+
+    ## Time difference of 0.227684 secs
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
@@ -293,17 +312,59 @@ timestep. The output of this ABM a table of the summary statistics
 output
 ```
 
-    ##              0%       25%       50%       75%     100%
-    ##  [1,] 13.454581 20.771448 25.589752 33.505386 58.66818
-    ##  [2,] 12.720107 17.488427 19.021518 26.151111 46.65112
-    ##  [3,] 11.920202 13.666286 16.749217 17.685568 26.74655
-    ##  [4,] 11.669221 13.119557 14.279140 17.132633 26.10308
-    ##  [5,]  8.574101 11.574143 12.639016 14.142371 25.45901
-    ##  [6,]  9.073864  9.765696 10.492791 11.940072 24.85083
-    ##  [7,]  8.270185  9.576378 10.137087 10.958044 17.44503
-    ##  [8,]  7.914282  9.555591  9.935443 10.377830 13.15475
-    ##  [9,]  6.342885  8.224291  9.150969  9.953345 13.08990
-    ## [10,]  6.373875  7.683168  8.220248  9.263368 12.06042
-    ## [11,]  5.716671  7.243964  7.867625  8.392990 11.86363
-    ## [12,]  5.150947  7.035923  7.537887  8.086402 11.80480
-    ## [13,]  5.080622  6.711418  7.203521  7.971198 12.29835
+    ##              0%       10%       20%       30%       40%       50%       60%
+    ##  [1,] 23.010000 24.152000 26.850000 30.834000 34.506000 38.380000 47.348000
+    ##  [2,] 18.207374 20.111509 21.870856 26.685864 29.908218 33.400654 34.718799
+    ##  [3,] 17.829955 19.134213 19.720456 20.550032 22.008151 23.798115 26.326291
+    ##  [4,] 13.890309 15.953146 16.980369 19.002059 19.784167 20.575479 21.537626
+    ##  [5,] 13.210684 15.073646 15.854850 16.881863 17.686528 18.498566 20.411096
+    ##  [6,] 10.533143 14.104895 14.919383 15.591357 16.117039 16.392723 18.245398
+    ##  [7,] 10.953140 12.261510 12.778732 13.745301 14.271371 15.104426 16.006929
+    ##  [8,]  9.632130 11.216622 12.499332 12.985282 13.458492 13.912812 14.415609
+    ##  [9,]  9.213038 10.544393 11.615249 12.248451 12.385032 12.914140 13.285264
+    ## [10,]  8.852904  9.938145 10.694822 10.953599 11.302213 11.812146 12.129492
+    ## [11,]  7.500468  9.578087 10.212370 10.729076 11.249086 11.508541 11.921412
+    ## [12,]  6.964948  7.919942  8.890363  9.430906  9.850215 10.306155 10.771370
+    ## [13,]  6.429772  7.177086  7.879340  8.232059  9.040776  9.567353  9.932611
+    ##            70%      80%      90%     100%
+    ##  [1,] 50.29400 53.99400 62.84000 86.39000
+    ##  [2,] 36.65554 44.42486 49.54890 74.57157
+    ##  [3,] 30.01976 33.41658 35.71756 53.50222
+    ##  [4,] 22.98116 26.12622 32.95123 38.56688
+    ##  [5,] 21.59453 22.59920 28.01742 34.60569
+    ##  [6,] 19.26305 19.67303 22.48037 35.87272
+    ##  [7,] 16.63196 17.90797 19.33435 30.38075
+    ##  [8,] 15.46387 16.76140 19.18855 31.16282
+    ##  [9,] 13.90910 14.33426 15.72564 22.65121
+    ## [10,] 12.51215 13.57320 15.55616 20.72228
+    ## [11,] 12.55855 13.56455 15.05525 20.11989
+    ## [12,] 11.35837 12.26732 13.70023 19.04326
+    ## [13,] 10.70037 11.41649 12.82347 17.32342
+
+Let’s do another run of the model, but let’s add interaction effects so
+that climbers with slower times are more likely to learn
+(`learn_x_times` = 1), climbers with faster times are more likely to
+innovate (`innov_x_times` = -1), and both learning and innovation become
+more common as population size increases (`learn_x_pop` and
+`innov_x_pop` = 1).
+
+``` r
+#store starting time
+start <- Sys.time()
+
+#run model
+output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0, n_top = 20,
+                           innov_prob = 0, adj_poss = 2, init_sd = 0.2, brakes = 4,
+                           learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
+                           sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+#print run time
+Sys.time() - start
+```
+
+    ## Time difference of 0.03970599 secs
