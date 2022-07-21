@@ -1,20 +1,17 @@
 
 # FUNCTIONS ---------------------------------------------------------------
 
-#function for athletic improvement
-athletic_improvement <- function(dist_stats, init_sd, brakes){
-  #replace mean with point sample
-  dist_stats[1] <- truncnorm::rtruncnorm(1, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-  
-  #replace sd with initial sd multiplied by the new mean to the power of brakes
-  dist_stats[2] <- init_sd*(dist_stats[1]^brakes)
-  
-  #return new distribution
-  return(dist_stats)
+#bounded exponential function for athletic improvement
+bounded_exp <- function(x, rate, min){
+  return((1-min)*(rate/rate^x)+min)
 }
 
 #function for the model
-SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss, innov_x_times = 0, innov_x_pop = 0, init_sd, brakes, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3){
+SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3, quant_by = 0.2){
+  #round integer params
+  n_top <- round(n_top)
+  adj_poss <- round(adj_poss)
+  
   #colors for plotting after each timepoint
   colors <- rainbow((length(n)-1)*1.25) #times 1.2 so it doesn't loop back around
   
@@ -31,14 +28,14 @@ SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob,
                                      beta = lapply(1:n[1], function(x){beta}),
                                      init_times = init_times,
                                      seq_ratios = lapply(1:n[1], function(x){truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier)}),
-                                     dists = lapply(1:n[1], function(x){c(1, init_sd)}),
+                                     ath_imp = lapply(1:n[1], function(x){bounded_exp(1:length(n), truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd), improve_min)}),
                                      current_record = init_times)
   
   #create output list
   output <- list()
   
   #store the output from initialization
-  if(sum_stats){output[[1]] <- quantile(climbers$current_record, probs = seq(0, 1, 0.1))}
+  if(sum_stats){output[[1]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
   if(!sum_stats){output[[1]] <- sort(climbers$current_record)}
   
   #initialize plot
@@ -49,9 +46,6 @@ SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob,
   
   #iterate over time
   for(i in 2:length(n)){
-    #update distributions with athletic improvement
-    climbers$dists <- lapply(1:nrow(climbers), function(x){athletic_improvement(climbers$dists[[x]], init_sd, brakes)})
-    
     #get top n climbers for each climber to compare themselves with
     top_climbers <- order(climbers$current_record)[1:n_top]
     
@@ -72,7 +66,7 @@ SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob,
       #if there are top climbers with different beta
       if(length(diff_top_climbers) > 0){
         #get possible new times for climber k assuming the beta and seq_ratios of the top climbers with different beta
-        poss_new_times <- sapply(diff_top_climbers, function(x){sum(((climbers$init_times[x]/n_holds)*climbers$seq_ratios[[x]]*truncnorm::rtruncnorm(n_holds, a = 0, b = 1, mean = climbers$dists[[x]][1], sd = climbers$dists[[x]][2]))[climbers$beta[[x]]])})
+        poss_new_times <- sapply(diff_top_climbers, function(x){sum(((climbers$init_times[x]/n_holds)*climbers$seq_ratios[[x]]*climbers$ath_imp[[x]][i])[climbers$beta[[x]]])})
         
         #if the lowest possible new time is better than the current record, then replace the beta and seq_ratio of climber k with beta from best beta from top climbers
         if(min(poss_new_times) < climbers$current_record[k]){
@@ -155,7 +149,7 @@ SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob,
     }
     
     #store current record in climbers table
-    climbers$current_record <- sapply(1:nrow(climbers), function(x){sum(((climbers$init_times[x]/n_holds)*climbers$seq_ratios[[x]]*truncnorm::rtruncnorm(n_holds, a = 0, b = 1, mean = climbers$dists[[x]][1], sd = climbers$dists[[x]][2]))[climbers$beta[[x]]])})
+    climbers$current_record <- sapply(1:nrow(climbers), function(x){sum(((climbers$init_times[x]/n_holds)*climbers$seq_ratios[[x]]*climbers$ath_imp[[x]][i])[climbers$beta[[x]]])})
     
     #plot
     if(plot){
@@ -174,22 +168,22 @@ SpeedClimbingABM <- function(n, leave_prob, init_times, n_holds, beta_true_prob,
     #get indices of climbers whose beta and ref times will be randomly sampled for new climbers
     add_inds <- sample(1:nrow(climbers), add_n, replace = TRUE)
 
-    #construct data table of new climbers, with beta and ref times from existing climbers and randomly chosen dists
+    #construct data table of new climbers, with beta and ref times from existing climbers
     new_climbers <- data.table::data.table(age = rep(1, add_n),
                                            beta = climbers$beta[add_inds],
                                            init_times = climbers$init_times[add_inds],
                                            seq_ratios = climbers$seq_ratios[add_inds],
-                                           dists = climbers$dists[sample(1:nrow(climbers), add_n, replace = TRUE)],
+                                           ath_imp = lapply(1:add_n, function(x){bounded_exp(1:length(n), truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd), improve_min)}),
                                            current_record = rep(NA, add_n))
     
     #add current records for new climbers
-    new_climbers$current_record <- sapply(1:nrow(new_climbers), function(x){sum(((new_climbers$init_times[x]/n_holds)*new_climbers$seq_ratios[[x]]*truncnorm::rtruncnorm(n_holds, a = 0, b = 1, mean = new_climbers$dists[[x]][1], sd = new_climbers$dists[[x]][2]))[new_climbers$beta[[x]]])})
-    
+    new_climbers$current_record <- sapply(1:nrow(new_climbers), function(x){sum(((new_climbers$init_times[x]/n_holds)*new_climbers$seq_ratios[[x]]*new_climbers$ath_imp[[x]][i])[new_climbers$beta[[x]]])})
+
     #combine data tables
     climbers <- data.table::rbindlist(list(climbers, new_climbers))
     
     #store the output
-    if(sum_stats){output[[i]] <- quantile(climbers$current_record, probs = seq(0, 1, 0.1))}
+    if(sum_stats){output[[i]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
     if(!sum_stats){output[[i]] <- sort(climbers$current_record)}
     
     #remove objects

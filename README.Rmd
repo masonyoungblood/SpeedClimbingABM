@@ -12,100 +12,25 @@ This agent-based model simulates a dynamic population of professional speed clim
 
 ## Athletic Improvement
 
-The biggest challenge in developing this model was figuring out how to simulate athletic improvement. I ended up assigning each climber a truncated normal distribution from 0 to 1 that changes over time and controls the amount of time spent on each hold. Here is a plotted example of what this looks like. The example starting distribution has a mean of 1 and a standard deviation of 0.1, but as the distribution shifts to the left the amount of time spent on each hold, and thus the overall climbing time, will get lower and lower.
+Athletic improvement is simulated using a bounded exponential function controlled by three parameters: `rate_m`, `rate_sd`, and `min`. `rate_m` controls the mean exponential rate across all climbers, `rate_sd` controls the standard deviation of the exponential rate to introduce variation in ability, and `min` controls the asymptotic lower bound. The result of this function is an `athletic_improvement` index for each climber over time (x-axis). Below is an example with a `rate_m` of 2, a `rate_sd` of 0.2, and a `min` of 0.4.
 
-```{r, fig.asp=0.6}
-#store distribution statistics (mean and sd)
-dist_stats <- c(1, 0.1)
-
-#generate range
-range <- seq(0, 1, by = 0.001)
-
-#construct and normalize dist so max is 1
-dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-dist <- dist/max(dist)
-
-#plot it
-par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
-```
-
-In order to simulate improvement in this distribution, we will randomly draw a point sample and use it as the new mean of the normal distribution in the next timestep. In order to "hit the brakes" on improvement, the standard deviation of each new distribution will be the `init_sd` multiplied by the new mean raised to the power of `brakes`. For this first example we'll use `init_sd` = 0.1 and `brakes` = 2.
-
-```{r, fig.asp=0.6}
-#set seed
-set.seed(123)
-
-#set initial sd and brakes values
-init_sd <- 0.1
-brakes <- 2
-
-#store distribution statistics (mean and sd)
-dist_stats <- c(1, init_sd)
-
-#begin plot
-par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
-
-#colors for plotting after each timepoint
-colors <- rainbow((20-1)*1.25) #times 1.2 so it doesn't loop back around
-
-#iterate
-for(i in 1:20){
-  #replace mean with point sample multiplied by improve
-  dist_stats[1] <- truncnorm::rtruncnorm(1, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-  
-  #replace sd with initial sd multiplied by the new mean to the power of brakes
-  dist_stats[2] <- init_sd*(dist_stats[1]^brakes)
-  
-  #create new dist to plot normalize it
-  dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-  dist <- dist/max(dist)
-  
-  #plot new line
-  lines(range, dist, type = "l", col = colors[i])
+```{r}
+#bounded exponential function
+bounded_exp <- function(x, rate, min){
+  return((1-min)*(rate/rate^x)+min)
 }
-```
 
-Now let's set increase `init_sd` to 0.4 and `brakes` to 4 and see what happens.
+#generate values
+x <- 1:12
+rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2, sd = 0.2)
+y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.4)})
 
-```{r, echo=FALSE, fig.asp=0.6}
-#set seed
-set.seed(123)
-
-#set inititial sd and brakes values
-init_sd <- 0.4
-brakes <- 4
-
-#store distribution statistics (mean and sd)
-dist_stats <- c(1, init_sd)
-
-#construct and normalize dist so max is 1
-dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-dist <- dist/max(dist)
-
-#begin plot
+#plot
 par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
-
-#iterate
-for(i in 1:20){
-  #replace mean with point sample multiplied by improve
-  dist_stats[1] <- truncnorm::rtruncnorm(1, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-  
-  #replace sd with initial sd multiplied by the new mean to the power of brakes
-  dist_stats[2] <- init_sd*(dist_stats[1]^brakes)
-  
-  #create new dist to plot normalize it
-  dist <- truncnorm::dtruncnorm(range, a = 0, mean = dist_stats[1], sd = dist_stats[2])
-  dist <- dist/max(dist)
-  
-  #plot new line
-  lines(range, dist, type = "l", col = colors[i])
-}
+matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim = c(0, 1), col = scales::alpha("black", 0.2), lty = 1)
 ```
 
-As you can see, we can get a wide range of outcomes by varying these two simple parameters.
+In each timestep, a climbers current record comes from multiplying the time per handhold by this `athletic_improvement` index.
 
 ## Beta & Reference Times
 
@@ -207,12 +132,9 @@ leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
 
 #initial climbing times
 init_times <- data[which(data$year == years[1]), ]$time
-
-#get initial sd
-init_sd <- sd(data$time[which(data$year == sort(unique(data$year))[1])]/mean(data$time[which(data$year == sort(unique(data$year))[1])]))
 ```
 
-Now let's run the model with an initial population size of `r n[1]`, a 0.2 probability of learning from the top 20 climbers, and a 0.2 probability of innovation where no more than 2 adjacent holds can be skipped. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
+Now let's run the model with an initial population size of `r n[1]`, a 0.2 probability of learning from the top 20 climbers, and a 0.2 probability of innovation where no more than 2 adjacent holds can be skipped. The `improve_rate_m` of athletic improvement will be 2, the `improve_rate_sd` will be 0.2, and the `min` improvement possible will be 0.4. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
 
 ```{r, fig.asp=0.6}
 #set seed
@@ -223,8 +145,8 @@ start <- Sys.time()
 
 #run model
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.4, n_top = 20,
-                           innov_prob = 0.2, adj_poss = 2, init_sd = 0.15, brakes = 4,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
+                           innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 
 #print run time
@@ -248,8 +170,8 @@ start <- Sys.time()
 
 #run model
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0, n_top = 20,
-                           innov_prob = 0.2, adj_poss = 2, init_sd = 0.15, brakes = 4,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
+                           innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 

@@ -11,84 +11,35 @@ beta.
 
 ## Athletic Improvement
 
-The biggest challenge in developing this model was figuring out how to
-simulate athletic improvement. I ended up assigning each climber a
-truncated normal distribution from 0 to 1 that changes over time and
-controls the amount of time spent on each hold. Here is a plotted
-example of what this looks like. The example starting distribution has a
-mean of 1 and a standard deviation of 0.1, but as the distribution
-shifts to the left the amount of time spent on each hold, and thus the
-overall climbing time, will get lower and lower.
+Athletic improvement is simulated using a bounded exponential function
+controlled by three parameters: `rate_m`, `rate_sd`, and `min`. `rate_m`
+controls the mean exponential rate across all climbers, `rate_sd`
+controls the standard deviation of the exponential rate to introduce
+variation in ability, and `min` controls the asymptotic lower bound. The
+result of this function is an `athletic_improvement` index for each
+climber over time (x-axis). Below is an example with a `rate_m` of 2, a
+`rate_sd` of 0.2, and a `min` of 0.4.
 
 ``` r
-#store distribution statistics (mean and sd)
-dist_stats <- c(1, 0.1)
+#bounded exponential function
+bounded_exp <- function(x, rate, min){
+  return((1-min)*(rate/rate^x)+min)
+}
 
-#generate range
-range <- seq(0, 1, by = 0.001)
+#generate values
+x <- 1:12
+rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2, sd = 0.2)
+y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.4)})
 
-#construct and normalize dist so max is 1
-dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-dist <- dist/max(dist)
-
-#plot it
+#plot
 par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
+matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim = c(0, 1), col = scales::alpha("black", 0.2), lty = 1)
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
-In order to simulate improvement in this distribution, we will randomly
-draw a point sample and use it as the new mean of the normal
-distribution in the next timestep. In order to “hit the brakes” on
-improvement, the standard deviation of each new distribution will be the
-`init_sd` multiplied by the new mean raised to the power of `brakes`.
-For this first example we’ll use `init_sd` = 0.1 and `brakes` = 2.
-
-``` r
-#set seed
-set.seed(123)
-
-#set initial sd and brakes values
-init_sd <- 0.1
-brakes <- 2
-
-#store distribution statistics (mean and sd)
-dist_stats <- c(1, init_sd)
-
-#begin plot
-par(mar = c(4, 4, 1, 1))
-plot(range, dist, type = "l", xlab = "P", ylab = "Density", xlim = c(0, 1))
-
-#colors for plotting after each timepoint
-colors <- rainbow((20-1)*1.25) #times 1.2 so it doesn't loop back around
-
-#iterate
-for(i in 1:20){
-  #replace mean with point sample multiplied by improve
-  dist_stats[1] <- truncnorm::rtruncnorm(1, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-  
-  #replace sd with initial sd multiplied by the new mean to the power of brakes
-  dist_stats[2] <- init_sd*(dist_stats[1]^brakes)
-  
-  #create new dist to plot normalize it
-  dist <- truncnorm::dtruncnorm(range, a = 0, b = 1, mean = dist_stats[1], sd = dist_stats[2])
-  dist <- dist/max(dist)
-  
-  #plot new line
-  lines(range, dist, type = "l", col = colors[i])
-}
-```
-
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-Now let’s set increase `init_sd` to 0.4 and `brakes` to 4 and see what
-happens.
-
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
-
-As you can see, we can get a wide range of outcomes by varying these two
-simple parameters.
+In each timestep, a climbers current record comes from multiplying the
+time per handhold by this `athletic_improvement` index.
 
 ## Beta & Reference Times
 
@@ -143,9 +94,9 @@ beta
 (init_time/n_holds)*seq_ratios
 ```
 
-    ##  [1] 1.3028065 1.2951601 1.2697115 1.2098881 1.1492629 0.8721397 0.7623168
-    ##  [8] 0.7287880 0.5873819 0.8064372 0.3305716 1.8760302 1.4435829 0.3946011
-    ## [15] 0.7187018 0.6900051 1.2509843 0.8624839 1.0139933 0.8871540
+    ##  [1] 1.1710974 0.2207594 1.4080416 0.2674713 0.9134322 0.8957299 0.5969995
+    ##  [8] 0.7342470 0.6648977 0.8517578 0.7224867 1.2618807 0.8806159 0.5630386
+    ## [15] 0.6412850 1.1541968 0.6629331 0.9719648 0.7169040 1.3648290
 
 This `sd_multiplier` value of 0.5 generates a distribution of times per
 hold that is similar to the example distribution in [Reveret et
@@ -160,7 +111,7 @@ value of 0.33 may be more appropriate [(Pandurevic et al.,
 analyses the posterior for this parameter converged to 0.5. We will make
 a simplifying assumption and use 0.5 for all of our simulations.
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 In each timestep, each climber has a certain `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
@@ -268,42 +219,41 @@ leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
 
 #initial climbing times
 init_times <- data[which(data$year == years[1]), ]$time
-
-#get initial sd
-init_sd <- sd(data$time[which(data$year == sort(unique(data$year))[1])]/mean(data$time[which(data$year == sort(unique(data$year))[1])]))
 ```
 
 Now let’s run the model with an initial population size of 37, a 0.2
 probability of learning from the top 20 climbers, and a 0.2 probability
-of innovation where no more than 2 adjacent holds can be skipped. `bw`
-and `ylim`, control the density bandwidth and y-axis limit in the plot,
-respectively. `sum_stats` controls whether summary statistics are
-calculated from the output, `plot` controls whether the output is
-plotted, and `bw` and `ylim` control the density bandwidth and y-axis
-limit of the plot, respectively.
+of innovation where no more than 2 adjacent holds can be skipped. The
+`improve_rate_m` of athletic improvement will be 2, the
+`improve_rate_sd` will be 0.2, and the `min` improvement possible will
+be 0.4. `bw` and `ylim`, control the density bandwidth and y-axis limit
+in the plot, respectively. `sum_stats` controls whether summary
+statistics are calculated from the output, `plot` controls whether the
+output is plotted, and `bw` and `ylim` control the density bandwidth and
+y-axis limit of the plot, respectively.
 
 ``` r
 #set seed
-set.seed(1234)
+#set.seed(1234)
 
 #store starting time
 start <- Sys.time()
 
 #run model
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.4, n_top = 20,
-                           innov_prob = 0.2, adj_poss = 2, init_sd = 0.15, brakes = 4,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
+                           innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 #print run time
 Sys.time() - start
 ```
 
-    ## Time difference of 0.280817 secs
+    ## Time difference of 0.2062211 secs
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
@@ -314,34 +264,34 @@ timestep. The output of this ABM a table of the summary statistics
 output
 ```
 
-    ##              0%       10%       20%       30%      40%      50%      60%
-    ##  [1,] 23.010000 24.152000 26.850000 30.834000 34.50600 38.38000 47.34800
-    ##  [2,] 12.761826 20.023355 23.793427 26.518366 32.88718 38.12152 39.77302
-    ##  [3,] 13.332129 16.102238 18.217846 20.026528 20.39239 22.17648 24.07452
-    ##  [4,] 10.494364 13.488622 14.078820 14.839543 17.72227 17.98869 18.65948
-    ##  [5,] 10.129161 11.875197 13.279061 13.859285 14.28961 14.91859 16.99825
-    ##  [6,]  9.412327 10.737420 12.248010 13.613367 14.33061 14.75506 15.24896
-    ##  [7,]  8.742520 10.330741 11.563589 12.618762 13.35801 13.79717 15.90748
-    ##  [8,]  9.154391 10.753670 11.544902 12.224039 12.62664 13.34815 14.27216
-    ##  [9,]  9.002533 10.616144 11.661566 12.261403 12.75051 13.03875 14.58703
-    ## [10,]  8.849515 10.031542 10.878508 11.619035 12.07584 13.04801 13.41002
-    ## [11,]  7.346235  9.358459 10.258824 10.827286 11.46269 12.33103 13.03682
-    ## [12,]  6.999091  8.611335  9.335621  9.734487 10.07129 10.85267 11.47201
-    ## [13,]  6.746023  8.396509  8.917587  9.690593 10.08004 10.46992 10.91139
-    ##            70%      80%      90%     100%
-    ##  [1,] 50.29400 53.99400 62.84000 86.39000
-    ##  [2,] 41.68019 45.42380 52.22495 55.25121
-    ##  [3,] 25.18877 31.36218 37.77011 54.06845
-    ##  [4,] 23.79976 24.79142 27.17880 39.05654
-    ##  [5,] 18.30585 20.39896 21.80457 29.96750
-    ##  [6,] 17.25045 18.98560 21.45520 23.28590
-    ##  [7,] 16.71615 18.22624 19.77208 21.24571
-    ##  [8,] 15.60521 16.77040 18.29740 20.52947
-    ##  [9,] 15.01069 16.74055 18.08729 22.98771
-    ## [10,] 14.99778 16.59659 18.30505 23.69740
-    ## [11,] 13.84865 15.02037 17.23025 22.32250
-    ## [12,] 12.29134 12.88204 14.23525 21.69915
-    ## [13,] 11.84014 12.78893 13.65159 19.37199
+    ##              0%       10%       20%       30%       40%       50%       60%
+    ##  [1,] 23.010000 24.152000 26.850000 30.834000 34.506000 38.380000 47.348000
+    ##  [2,] 12.317890 14.875258 18.679820 19.697300 21.596174 22.835628 24.150158
+    ##  [3,]  9.602480 11.740445 13.993279 15.923207 16.882375 17.459200 18.091515
+    ##  [4,]  9.048284  9.421418  9.987964 12.500537 13.097471 13.562483 14.118041
+    ##  [5,]  7.274149  8.068610  8.532725  8.763266  9.122720  9.357439 11.827960
+    ##  [6,]  6.526504  7.010012  7.530442  7.770917  7.904872  8.349489  8.690358
+    ##  [7,]  6.341333  6.574879  6.697899  6.811523  6.999505  7.424195  8.092159
+    ##  [8,]  6.101528  6.476853  6.588419  6.704977  6.797921  7.286760  7.399286
+    ##  [9,]  5.756849  5.974566  6.417760  6.516267  6.762173  7.173239  7.332569
+    ## [10,]  5.237934  5.767548  6.397673  6.495518  7.064164  7.314365  7.322926
+    ## [11,]  4.446071  4.677941  4.962160  4.980171  6.024904  6.533448  6.789394
+    ## [12,]  4.259187  4.668821  4.790820  4.957376  4.963649  5.225461  6.015705
+    ## [13,]  4.008788  4.257248  4.445312  4.667748  4.955430  4.964028  5.728012
+    ##             70%       80%       90%     100%
+    ##  [1,] 50.294000 53.994000 62.840000 86.39000
+    ##  [2,] 25.108856 30.691648 41.519839 55.98966
+    ##  [3,] 18.547126 19.575823 25.709494 41.33017
+    ##  [4,] 15.039039 15.760290 17.815326 22.40885
+    ##  [5,] 13.033629 13.806240 14.451229 15.67023
+    ##  [6,] 11.854670 12.440098 13.318386 14.32805
+    ##  [7,]  8.443771 11.471929 12.102746 13.19669
+    ##  [8,]  8.032530  9.619175 11.078388 12.10552
+    ##  [9,]  7.347140  8.189635 11.382328 12.02559
+    ## [10,]  7.344286  7.446167 11.287757 11.49439
+    ## [11,]  7.312783  7.328007  8.141557 11.40845
+    ## [12,]  6.569899  7.086993  7.318022 11.32464
+    ## [13,]  6.017425  6.712825  7.307341 11.27231
 
 Let’s do another run of the model, but let’s add interaction effects so
 that climbers with slower times are more likely to learn
@@ -359,17 +309,17 @@ start <- Sys.time()
 
 #run model
 output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0, n_top = 20,
-                           innov_prob = 0.2, adj_poss = 2, init_sd = 0.15, brakes = 4,
+                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
+                           innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 #print run time
 Sys.time() - start
 ```
 
-    ## Time difference of 0.085361 secs
+    ## Time difference of 0.1122799 secs
