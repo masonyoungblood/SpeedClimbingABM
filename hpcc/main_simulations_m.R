@@ -61,7 +61,7 @@ for(i in 1:5){
   #run simulations
   #slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "main", pkgs = pkgs, global_objects = objects(), submit = FALSE) #local test
   slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "main",
-                               nodes = 4, cpus_per_node = 25, pkgs = pkgs, global_objects = objects())
+                               nodes = 4, cpus_per_node = 48, pkgs = pkgs, global_objects = objects())
   #slurm <- rslurm::local_slurm_array(slurm) #local test
   
   #get output and clean files
