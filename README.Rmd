@@ -20,17 +20,22 @@ bounded_exp <- function(x, rate, min){
   return((1-min)*(rate/rate^x)+min)
 }
 
+# #generate values
+# x <- 1:12
+# rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2, sd = 0.2)
+# y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.4)})
+
 #generate values
 x <- 1:12
-rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2, sd = 0.2)
-y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.4)})
+rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2.5, sd = 0.3)
+y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.07)})
 
 #plot
 par(mar = c(4, 4, 1, 1))
 matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim = c(0, 1), col = scales::alpha("black", 0.2), lty = 1)
 ```
 
-In each timestep, a climbers current record comes from multiplying the time per handhold by this `athletic_improvement` index.
+In each timestep, a climbers current record comes from multiplying the time per handhold by this `athletic_improvement` index. After the first timestep, new climbers entering the population will have their distribution of `athletic_improvement` indices divided by the `athletic_improvement` value from the timestep that they enter. In this way, a climber who enters the population with a lower climbing time will follow the same general improvement trajectory as everyone else in the population.
 
 ## Beta & Reference Times
 
@@ -40,7 +45,7 @@ Now, how do we use these distributions in combination with hold sequences? First
 knitr::include_graphics("https://www.kindpng.com/picc/m/592-5929143_speed-climbing-wall-sketch-speed-climbing-route-map.png")
 ```
 
-As you can see, the standardized speed wall has a total of 20 hand holds and 11 foot holds. Speed climbers often "smear" their feet on the wall or use hand holds for feet, so we will only be modeling the time spent on hand holds. Each climber will be initialized with a vector of their beta, or a TRUE/FALSE for whether they use each hand hold in the route, along with a vector of sequence ratios. The sequence ratios will be drawn from a truncated normal distribution with a lower bound at 0, a mean of 1, and a standard deviation parameter that controls the initial variation in times across holds. The actual amount of time spent on each hold, then, will be these sequence ratios multiplied by an initial climbing time (let's say 18 seconds) divided by the number of holds. For now the beta vectors will start out as all TRUE, so that all climbers start out using every hold in the route. Here is an example of how the beta and sequence ratio vectors are initialized.
+As you can see, the standardized speed wall has a total of 20 hand holds and 11 foot holds. Speed climbers often "smear" their feet on the wall or use hand holds for feet, so we will only be modeling the time spent on hand holds. Each climber will be initialized with a vector of their beta, or a TRUE/FALSE for whether they use each hand hold in the route, along with a vector of sequence ratios. The sequence ratios will be drawn from a truncated normal distribution with a lower bound at 0, a mean of 1, and a standard deviation parameter that controls the initial variation in times across holds. The actual amount of time spent on each hold, then, will be these sequence ratios multiplied by an initial reference climbing time per hold (initially their starting climbing time divided by the number of holds). For now the beta vectors will start out as all TRUE, so that all climbers start out using every hold in the route. Here is an example of how the beta and sequence ratio vectors are initialized.
 
 ```{r}
 #set number of holds
@@ -85,9 +90,45 @@ In each timestep, each climber has a certain `innov_prob` probability of innovat
 
 In each timestep, each climber also has a certain `learn_prob` probability of copying the beta of another climber. When a climber copies another climber, they only have access to the top `n_top` fastest climbers in the current timestep. They "try out" all of the betas of the fastest climbers that are different from their own beta, and if one of them yields a faster time then they overwrite their current `beta` and `seq_ratios` with those of better beta. See `SpeedClimbingABM.R` for details.
 
-## Dynamic Population Size
+## Population Size & Turnover
 
-We also allow the population size to grow over time. For now we just have a dynamic population size of `n` climbers and the probability `leave_prob` of leaving the sport in each timestep. Basically, at the end of each timestep a random subset of climbers leave the sport, and new climbers enter the sport to bring the population up to the size specified by `n`. The probability of a climber leaving the sport is a function of how far their current record is from the current best among climbers of the same gender as well as how long they've been in the sport, so older climbers with slower times are more likely to leave. Specifically it is their `current_record` divided by the minimum `current_record` in the population multiplied by `age`, or the number of timesteps that they have been in the sport. Each new climber that enters the sport inherits information from two randomly sampled climbers from that timestep: `seq_ratios` and `beta` come from one, and `dist` comes from another. See `SpeedClimbingABM.R` for details.
+In the original version of the model we did not use all available information about when specific climbers entered the sport, left the sport, etc. This version was far too stochastic to use for inference, so we are now incorporating this information explicitly into the model. First let's take a look at the data:
+
+```{r echo=FALSE}
+load("data.RData")
+data.table::data.table(data)
+```
+
+Each row is an climber in a particular year with their current record. When a climber first enters the sport we will initialize them with their current record in that year, and then we will simulate innovation, learning, and athletic improvement from that baseline until they eventually leave the sport. In the cases when climbers' have gaps in their careers we will treat them as separate cascades by re-initializing their current record when they re-enter the sport and simulating change from there. Climbers who only appear in the dataset once be initialized with their current record in the year they appear and will disappear in the next year with no simulated improvement (see below).
+
+```{r echo=FALSE}
+par(mar = c(4, 4, 1, 1))
+hist(as.numeric(sort(table(data$athlete), decreasing = TRUE)), main = NULL, xlab = "# of Years")
+```
+
+To do this, let's create a new `pop_data` object that includes all of the information we need. Each row corresponds to a continuous sequence of years: the first column is the climbers' ID, the second is their starting year, the third is their end year, and the fourth is their best time in the starting year.
+
+```{r echo=FALSE}
+#get all unique climbers
+uniq_climbers <- unique(data$athlete)
+
+#separate continuous sequences of years
+seqs <- lapply(uniq_climbers, function(x){split(data$year[which(data$athlete == x)], cumsum(seq_along(data$year[which(data$athlete == x)]) %in% (which(diff(data$year[which(data$athlete == x)]) > 1) + 1)))})
+
+#for each unique climber, iterate through their sequences, and and extract their ID, start year, end year, and time in start year (separate row per sequence)
+pop_data <- data.table::data.table(do.call(rbind, lapply(1:length(uniq_climbers), function(i){
+  t(sapply(1:length(seqs[[i]]), function(j){
+    c(uniq_climbers[i], min(unlist(seqs[[i]][j])), max(unlist(seqs[[i]][j])), data$time[which(data$athlete == uniq_climbers[i] & data$year == min(unlist(seqs[[i]][j])))])
+    }))
+  })))
+colnames(pop_data) <- c("ID", "start", "end", "time")
+pop_data
+
+#remove temp objects
+rm(list = c("seqs", "uniq_climbers"))
+```
+
+After the first timestep, each new climber that joins the population will be initialized with a random `seq_ratios` and `beta` drawn from an existing climber. See `SpeedClimbingABM.R` for details.
 
 ## Interaction Effects
 
@@ -107,11 +148,12 @@ The ABM functions are in the `SpeedClimbingABM.R` file. Please refer to the func
 source("SpeedClimbingABM.R")
 ```
 
-Let's do a test run of this model based on the observed data from the women in the population.
+Let's do a test run of this model based on the observed data from the men in the population.
 
 ```{r}
 load("data.RData")
-data <- data[which(data$gender == "W"), ]
+pop_data <- pop_data[which(data$gender[match(pop_data$ID, data$athlete)] == "M"), ]
+data <- data[which(data$gender == "M"), ]
 ```
 
 First we need the observed population sizes, leave probabilities, and initial climbing times.
@@ -122,16 +164,6 @@ years <- sort(unique(data$year))
 
 #population sizes
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
-
-#leave probabilities
-leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
-  temp_a <- data[which(data$year == years[x]), ]
-  temp_b <- data[which(data$year == years[x+1]), ]
-  length(which(!(temp_a$athlete %in% temp_b$athlete)))/nrow(temp_a)
-}))
-
-#initial climbing times
-init_times <- data[which(data$year == years[1]), ]$time
 ```
 
 Now let's run the model with an initial population size of `r n[1]`, a 0.2 probability of learning from the top 20 climbers, and a 0.2 probability of innovation where no more than 2 adjacent holds can be skipped. The `improve_rate_m` of athletic improvement will be 2, the `improve_rate_sd` will be 0.2, and the `min` improvement possible will be 0.4. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
@@ -144,7 +176,7 @@ set.seed(1234)
 start <- Sys.time()
 
 #run model
-output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
+output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
                            innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
@@ -169,7 +201,7 @@ set.seed(123)
 start <- Sys.time()
 
 #run model
-output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
+output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
                            innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
@@ -178,3 +210,8 @@ output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_tim
 #print run time
 Sys.time() - start
 ```
+
+```{r}
+output
+```
+

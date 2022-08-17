@@ -39,7 +39,13 @@ matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim
 ![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 In each timestep, a climbers current record comes from multiplying the
-time per handhold by this `athletic_improvement` index.
+time per handhold by this `athletic_improvement` index. After the first
+timestep, new climbers entering the population will have their
+distribution of `athletic_improvement` indices divided by the
+`athletic_improvement` value from the timestep that they enter. In this
+way, a climber who enters the population with a lower climbing time will
+follow the same general improvement trajectory as everyone else in the
+population.
 
 ## Beta & Reference Times
 
@@ -59,10 +65,11 @@ drawn from a truncated normal distribution with a lower bound at 0, a
 mean of 1, and a standard deviation parameter that controls the initial
 variation in times across holds. The actual amount of time spent on each
 hold, then, will be these sequence ratios multiplied by an initial
-climbing time (let’s say 18 seconds) divided by the number of holds. For
-now the beta vectors will start out as all TRUE, so that all climbers
-start out using every hold in the route. Here is an example of how the
-beta and sequence ratio vectors are initialized.
+reference climbing time per hold (initially their starting climbing time
+divided by the number of holds). For now the beta vectors will start out
+as all TRUE, so that all climbers start out using every hold in the
+route. Here is an example of how the beta and sequence ratio vectors are
+initialized.
 
 ``` r
 #set number of holds
@@ -94,9 +101,9 @@ beta
 (init_time/n_holds)*seq_ratios
 ```
 
-    ##  [1] 1.1710974 0.2207594 1.4080416 0.2674713 0.9134322 0.8957299 0.5969995
-    ##  [8] 0.7342470 0.6648977 0.8517578 0.7224867 1.2618807 0.8806159 0.5630386
-    ## [15] 0.6412850 1.1541968 0.6629331 0.9719648 0.7169040 1.3648290
+    ##  [1] 0.4744622 0.4571544 0.2720535 0.4127872 1.6328137 0.9874435 0.4134555
+    ##  [8] 1.3448218 0.8603465 0.9869331 0.2306545 0.6201797 0.3022690 0.2274080
+    ## [15] 0.5851002 0.1099724 0.9573772 0.3975417 1.2937104 0.8805828
 
 This `sd_multiplier` value of 0.5 generates a distribution of times per
 hold that is similar to the example distribution in [Reveret et
@@ -140,23 +147,62 @@ them yields a faster time then they overwrite their current `beta` and
 `seq_ratios` with those of better beta. See `SpeedClimbingABM.R` for
 details.
 
-## Dynamic Population Size
+## Population Size & Turnover
 
-We also allow the population size to grow over time. For now we just
-have a dynamic population size of `n` climbers and the probability
-`leave_prob` of leaving the sport in each timestep. Basically, at the
-end of each timestep a random subset of climbers leave the sport, and
-new climbers enter the sport to bring the population up to the size
-specified by `n`. The probability of a climber leaving the sport is a
-function of how far their current record is from the current best among
-climbers of the same gender as well as how long they’ve been in the
-sport, so older climbers with slower times are more likely to leave.
-Specifically it is their `current_record` divided by the minimum
-`current_record` in the population multiplied by `age`, or the number of
-timesteps that they have been in the sport. Each new climber that enters
-the sport inherits information from two randomly sampled climbers from
-that timestep: `seq_ratios` and `beta` come from one, and `dist` comes
-from another. See `SpeedClimbingABM.R` for details.
+In the original version of the model we did not use all available
+information about when specific climbers entered the sport, left the
+sport, etc. This version was far too stochastic to use for inference, so
+we are now incorporating this information explicitly into the model.
+First let’s take a look at the data:
+
+    ##       athlete gender   time year
+    ##    1:    1474      W 25.170 2007
+    ##    2:      42      W 23.450 2007
+    ##    3:      71      W 50.060 2007
+    ##    4:      46      W 23.260 2007
+    ##    5:    4735      W 48.950 2007
+    ##   ---                           
+    ## 2007:    4206      W 15.058 2019
+    ## 2008:    2651      W 15.494 2019
+    ## 2009:    4215      W 18.339 2019
+    ## 2010:    2636      W 20.085 2019
+    ## 2011:    2625      W 21.796 2019
+
+Each row is an climber in a particular year with their current record.
+When a climber first enters the sport we will initialize them with their
+current record in that year, and then we will simulate innovation,
+learning, and athletic improvement from that baseline until they
+eventually leave the sport. In the cases when climbers’ have gaps in
+their careers we will treat them as separate cascades by re-initializing
+their current record when they re-enter the sport and simulating change
+from there. Climbers who only appear in the dataset once be initialized
+with their current record in the year they appear and will disappear in
+the next year with no simulated improvement (see below).
+
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+To do this, let’s create a new `pop_data` object that includes all of
+the information we need. Each row corresponds to a continuous sequence
+of years: the first column is the climbers’ ID, the second is their
+starting year, the third is their end year, and the fourth is their best
+time in the starting year.
+
+    ##         ID start  end   time
+    ##    1: 1474  2007 2009 25.170
+    ##    2:   42  2007 2007 23.450
+    ##    3:   71  2007 2008 50.060
+    ##    4:   46  2007 2009 23.260
+    ##    5:   46  2011 2011 11.770
+    ##   ---                       
+    ## 1063: 4206  2019 2019 15.058
+    ## 1064: 2651  2019 2019 15.494
+    ## 1065: 4215  2019 2019 18.339
+    ## 1066: 2636  2019 2019 20.085
+    ## 1067: 2625  2019 2019 21.796
+
+After the first timestep, each new climber that joins the population
+will be initialized with a random `seq_ratios` and `beta` drawn from an
+existing climber. See `SpeedClimbingABM.R` for details.
 
 ## Interaction Effects
 
@@ -193,11 +239,12 @@ source("SpeedClimbingABM.R")
 ```
 
 Let’s do a test run of this model based on the observed data from the
-women in the population.
+men in the population.
 
 ``` r
 load("data.RData")
-data <- data[which(data$gender == "W"), ]
+pop_data <- pop_data[which(data$gender[match(pop_data$ID, data$athlete)] == "M"), ]
+data <- data[which(data$gender == "M"), ]
 ```
 
 First we need the observed population sizes, leave probabilities, and
@@ -216,12 +263,9 @@ leave_prob <- unlist(lapply(1:(length(years)-1), function(x){
   temp_b <- data[which(data$year == years[x+1]), ]
   length(which(!(temp_a$athlete %in% temp_b$athlete)))/nrow(temp_a)
 }))
-
-#initial climbing times
-init_times <- data[which(data$year == years[1]), ]$time
 ```
 
-Now let’s run the model with an initial population size of 37, a 0.2
+Now let’s run the model with an initial population size of 53, a 0.2
 probability of learning from the top 20 climbers, and a 0.2 probability
 of innovation where no more than 2 adjacent holds can be skipped. The
 `improve_rate_m` of athletic improvement will be 2, the
@@ -234,26 +278,26 @@ y-axis limit of the plot, respectively.
 
 ``` r
 #set seed
-#set.seed(1234)
+set.seed(1234)
 
 #store starting time
 start <- Sys.time()
 
 #run model
-output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
+output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
                            innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 #print run time
 Sys.time() - start
 ```
 
-    ## Time difference of 0.2062211 secs
+    ## Time difference of 0.1817019 secs
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
@@ -264,34 +308,20 @@ timestep. The output of this ABM a table of the summary statistics
 output
 ```
 
-    ##              0%       10%       20%       30%       40%       50%       60%
-    ##  [1,] 23.010000 24.152000 26.850000 30.834000 34.506000 38.380000 47.348000
-    ##  [2,] 12.317890 14.875258 18.679820 19.697300 21.596174 22.835628 24.150158
-    ##  [3,]  9.602480 11.740445 13.993279 15.923207 16.882375 17.459200 18.091515
-    ##  [4,]  9.048284  9.421418  9.987964 12.500537 13.097471 13.562483 14.118041
-    ##  [5,]  7.274149  8.068610  8.532725  8.763266  9.122720  9.357439 11.827960
-    ##  [6,]  6.526504  7.010012  7.530442  7.770917  7.904872  8.349489  8.690358
-    ##  [7,]  6.341333  6.574879  6.697899  6.811523  6.999505  7.424195  8.092159
-    ##  [8,]  6.101528  6.476853  6.588419  6.704977  6.797921  7.286760  7.399286
-    ##  [9,]  5.756849  5.974566  6.417760  6.516267  6.762173  7.173239  7.332569
-    ## [10,]  5.237934  5.767548  6.397673  6.495518  7.064164  7.314365  7.322926
-    ## [11,]  4.446071  4.677941  4.962160  4.980171  6.024904  6.533448  6.789394
-    ## [12,]  4.259187  4.668821  4.790820  4.957376  4.963649  5.225461  6.015705
-    ## [13,]  4.008788  4.257248  4.445312  4.667748  4.955430  4.964028  5.728012
-    ##             70%       80%       90%     100%
-    ##  [1,] 50.294000 53.994000 62.840000 86.39000
-    ##  [2,] 25.108856 30.691648 41.519839 55.98966
-    ##  [3,] 18.547126 19.575823 25.709494 41.33017
-    ##  [4,] 15.039039 15.760290 17.815326 22.40885
-    ##  [5,] 13.033629 13.806240 14.451229 15.67023
-    ##  [6,] 11.854670 12.440098 13.318386 14.32805
-    ##  [7,]  8.443771 11.471929 12.102746 13.19669
-    ##  [8,]  8.032530  9.619175 11.078388 12.10552
-    ##  [9,]  7.347140  8.189635 11.382328 12.02559
-    ## [10,]  7.344286  7.446167 11.287757 11.49439
-    ## [11,]  7.312783  7.328007  8.141557 11.40845
-    ## [12,]  6.569899  7.086993  7.318022 11.32464
-    ## [13,]  6.017425  6.712825  7.307341 11.27231
+    ##              0%       20%       40%       60%       80%     100%
+    ##  [1,] 15.400000 20.408000 24.432000 29.712000 39.548000 62.06000
+    ##  [2,]  6.528361 15.654664 21.039903 26.193528 30.221519 50.14070
+    ##  [3,]  6.810445 10.721778 16.965612 20.811129 24.060233 34.89167
+    ##  [4,]  6.213254  7.719302  9.169176 12.024963 19.828824 33.24734
+    ##  [5,]  5.289323  6.709633  8.078612  9.330650 13.864140 30.73479
+    ##  [6,]  4.910707  5.494934  6.076116  7.123734  8.431761 17.00022
+    ##  [7,]  5.001306  5.625208  6.438322  7.927289 12.104605 20.02946
+    ##  [8,]  5.036020  5.995099  6.563749  7.901798 10.135422 18.47968
+    ##  [9,]  4.622165  5.877891  6.648675  7.391013  8.995151 14.36394
+    ## [10,]  4.320716  5.462960  6.169209  6.870992  8.973310 26.24421
+    ## [11,]  4.028492  5.127311  5.951435  6.766907  8.087950 24.52996
+    ## [12,]  4.099384  5.307715  5.991537  6.971324  7.791567 14.57997
+    ## [13,]  4.045372  4.931698  5.644834  6.450298  7.420200 14.57879
 
 Let’s do another run of the model, but let’s add interaction effects so
 that climbers with slower times are more likely to learn
@@ -308,18 +338,37 @@ set.seed(123)
 start <- Sys.time()
 
 #run model
-output <- SpeedClimbingABM(n = n, leave_prob = leave_prob, init_times = init_times,
+output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
                            innov_prob = 0.2, adj_poss = 2, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 #print run time
 Sys.time() - start
 ```
 
-    ## Time difference of 0.1122799 secs
+    ## Time difference of 0.102278 secs
+
+``` r
+output
+```
+
+    ##              0%       20%       40%       60%       80%     100%
+    ##  [1,] 15.400000 20.408000 24.432000 29.712000 39.548000 62.06000
+    ##  [2,]  7.710770 16.071091 23.014847 27.779552 31.912482 48.16910
+    ##  [3,]  7.462725 11.637873 18.012938 22.723641 26.384654 38.00332
+    ##  [4,]  6.905827  8.967351 10.290151 13.316493 21.249536 29.92379
+    ##  [5,]  6.350597  7.149425  8.377452  9.838521 16.054063 27.01723
+    ##  [6,]  5.529633  6.382031  7.072477  8.022769 10.269137 16.34880
+    ##  [7,]  5.558008  6.470874  7.273458  8.283062 12.442544 21.96656
+    ##  [8,]  5.648806  6.464822  6.989452  7.953232 11.033028 20.32395
+    ##  [9,]  5.484994  6.704759  7.537595  8.182973  9.635315 17.02560
+    ## [10,]  5.114335  6.535052  7.187341  8.093211  9.897322 18.85205
+    ## [11,]  5.378535  6.274364  6.955929  7.866402  9.068224 18.84271
+    ## [12,]  5.120448  6.252924  7.044754  7.831806  8.834569 16.09168
+    ## [13,]  4.596311  5.667386  6.518379  7.570840  8.355814 16.09051
