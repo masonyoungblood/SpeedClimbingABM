@@ -70,7 +70,7 @@ for(i in 1:5){
   
   #save output
   main_simulations <- list(priors = priors, sum_stats = sum_stats)
-  save(main_simulations, file = paste0("hpcc/main_simulations_", i, ".RData"))
+  save(main_simulations, file = paste0("main_simulations_", i, ".RData"))
   
   #remove temporary objects
   rm(list = c("priors", "slurm", "sum_stats", "main_simulations"))
