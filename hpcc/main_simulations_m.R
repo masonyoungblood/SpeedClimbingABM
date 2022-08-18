@@ -34,10 +34,10 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 
 #wrap SpeedClimbingABM in a simpler function for slurm
 SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, improve_rate_m, improve_rate_sd, improve_min){
-  SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
+  c(t(SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
                    beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
                    improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
-                   sum_stats = TRUE, plot = FALSE)
+                   sum_stats = TRUE, plot = FALSE)))
 }
 
 #store required packages
@@ -65,13 +65,13 @@ for(i in 1:5){
   #slurm <- rslurm::local_slurm_array(slurm) #local test
   
   #get output and clean files
-  sum_stats <- rslurm::get_slurm_out(slurm)
+  sum_stats <- rslurm::get_slurm_out(slurm, outtype = "table")
   rslurm::cleanup_files(slurm)
   
   #save output
-  main_simulations <- list(priors = priors, sum_stats = sum_stats)
-  save(main_simulations, file = paste0("main_simulations_m_", i, ".RData"))
+  simulations <- list(priors = priors, sum_stats = sum_stats)
+  save(simulations, file = paste0("simulations_m_", i, ".RData"))
   
   #remove temporary objects
-  rm(list = c("priors", "slurm", "sum_stats", "main_simulations"))
+  rm(list = c("priors", "slurm", "sum_stats", "simulations"))
 }
