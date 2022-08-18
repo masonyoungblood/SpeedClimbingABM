@@ -37,7 +37,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
   SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
                    beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
                    improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
-                   sum_stats = FALSE, plot = FALSE)
+                   sum_stats = TRUE, plot = FALSE)
 }
 
 #store required packages
