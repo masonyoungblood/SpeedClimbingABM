@@ -28,7 +28,7 @@ bounded_exp <- function(x, rate, min){
 # quant_by <- 0.2
 
 #function for the model
-SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3, quant_by = 0.2){
+SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #round integer params
   n_top <- round(n_top)
   adj_poss <- round(adj_poss)
