@@ -43,35 +43,22 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
 #store required packages
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
-#run simulations, 
-for(i in 1:5){
-  #number of simulations
-  #n_sim <- 100 #local test
-  n_sim <- 10000000
-  
-  #set priors
-  priors <- data.frame(innov_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
-                       learn_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
-                       n_top = runif(n_sim, min = 1, max = 34),
-                       adj_poss = runif(n_sim, 1, 2),
-                       improve_rate_m = runif(n_sim, min = 1, max = 4),
-                       improve_rate_sd = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 2),
-                       improve_min = runif(n_sim, min = 0, max = 0.5))
-  
-  #run simulations
-  #slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "main", pkgs = pkgs, global_objects = objects(), submit = FALSE) #local test
-  slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "main",
-                               nodes = 4, cpus_per_node = 48, pkgs = pkgs, global_objects = objects())
-  #slurm <- rslurm::local_slurm_array(slurm) #local test
-  
-  #get output and clean files
-  sum_stats <- rslurm::get_slurm_out(slurm, outtype = "table")
-  rslurm::cleanup_files(slurm)
-  
-  #save output
-  simulations <- list(priors = priors, sum_stats = sum_stats)
-  save(simulations, file = paste0("simulations_m_", i, ".RData"))
-  
-  #remove temporary objects
-  rm(list = c("priors", "slurm", "sum_stats", "simulations"))
-}
+#number of simulations
+n_sim <- 10000
+
+#set priors
+priors <- data.frame(innov_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
+                     learn_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
+                     n_top = runif(n_sim, min = 1, max = 34),
+                     adj_poss = runif(n_sim, 1, 2),
+                     improve_rate_m = runif(n_sim, min = 1, max = 4),
+                     improve_rate_sd = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 2),
+                     improve_min = runif(n_sim, min = 0, max = 0.5))
+
+#save priors
+save(priors, file = "prior_table.RData")
+
+#run simulations
+slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "main",
+                             nodes = 5, cpus_per_node = 48, pkgs = pkgs,
+                             global_objects = objects(), slurm_options = list(mem = 0))
