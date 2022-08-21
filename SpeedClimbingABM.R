@@ -184,7 +184,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
     new_climbers$ath_imp <- lapply(1:nrow(new_climbers), function(x){new_climbers$ath_imp[[x]]/new_climbers$ath_imp[[x]][i]})
     
     #simulate leaving the sport
-    climbers <- climbers[which(climbers$ID %in% pop_data$ID[which(pop_data$end == years[i-1])]), ]
+    climbers <- climbers[-which(climbers$ID %in% pop_data$ID[which(pop_data$end == years[i-1])]), ]
     
     #store current record of old climbers
     climbers$current_record <- sapply(1:nrow(climbers), function(x){sum((climbers$ref_times[x]*climbers$seq_ratios[[x]]*climbers$ath_imp[[x]][i])[climbers$beta[[x]]])})

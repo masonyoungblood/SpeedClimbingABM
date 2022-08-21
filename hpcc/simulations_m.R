@@ -1,11 +1,23 @@
 #set working directory, load data, source code
-#setwd("~/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM") #local test
 setwd(system("pwd", intern = T))
 load("data.RData")
 source("SpeedClimbingABM.R")
 
+#euclidean distance function, where a and b are lists of vectors, with optional weighted (not default)
+euclidean <- function(a, b, weighted = FALSE){
+  divs <- c(length(a):1)
+  if(weighted){
+    return(sum(sapply(1:length(a), function(x){sqrt(sum((a[[x]]-b[[x]])^2)/divs[[x]])})))
+  } else{
+    return(sum(sapply(1:length(a), function(x){sqrt(sum((a[[x]]-b[[x]])^2))})))
+  }
+}
+
 #random seed
 set.seed(12345)
+
+#subset data to only include men
+data <- data[which(data$gender == "M"), ]
 
 #get all unique climbers
 uniq_climbers <- unique(data$athlete)
@@ -22,29 +34,29 @@ pop_data <- data.table::data.table(do.call(rbind, lapply(1:length(uniq_climbers)
 colnames(pop_data) <- c("ID", "start", "end", "time")
 pop_data
 
-#subset both data objects to only include men
-pop_data <- pop_data[which(data$gender[match(pop_data$ID, data$athlete)] == "M"), ]
-data <- data[which(data$gender == "M"), ]
-
 #get years
 years <- sort(unique(data$year))
 
 #get population sizes
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 
-#wrap SpeedClimbingABM in a simpler function for slurm
+#get observed summary statistics
+obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
+
+#wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
 SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, improve_rate_m, improve_rate_sd, improve_min){
-  c(t(SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
-                   beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
-                   improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
-                   sum_stats = TRUE, plot = FALSE)))
+  temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
+                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
+                           improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
+                           sum_stats = FALSE, plot = FALSE)
+  weighted_euclidean(obs_stats[-1], temp[-1])
 }
 
 #store required packages
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations
-n_sim <- 10000
+n_sim <- 100000000
 
 #set priors
 priors <- data.frame(innov_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
