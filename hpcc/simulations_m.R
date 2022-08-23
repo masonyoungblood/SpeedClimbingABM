@@ -82,8 +82,7 @@ for(i in 1:rounds){
     results_2 <- readRDS(paste0("_rslurm_", i-1, "/results_2.RDS"))
     results_3 <- readRDS(paste0("_rslurm_", i-1, "/results_3.RDS"))
     results_4 <- readRDS(paste0("_rslurm_", i-1, "/results_4.RDS"))
-    results_5 <- readRDS(paste0("_rslurm_", i-1, "/results_5.RDS"))
-    results <- c(unlist(results_0), unlist(results_1), unlist(results_2), unlist(results_3), unlist(results_4), unlist(results_5))
+    results <- c(unlist(results_0), unlist(results_1), unlist(results_2), unlist(results_3), unlist(results_4))
     
     #get posteriors for each parameter for prior sampling
     innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob), to = max(params$innov_prob))
@@ -95,7 +94,7 @@ for(i in 1:rounds){
     improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min), to = max(params$improve_min))
     
     #remove objects
-    rm(list = c("priors", "slurm", "params", "results_0", "results_1", "results_2", "results_3", "results_4", "results_5", "results"))
+    rm(list = c("priors", "slurm", "params", "results_0", "results_1", "results_2", "results_3", "results_4", "results"))
     
     #set new priors by sampling from posteriors
     priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
@@ -112,6 +111,6 @@ for(i in 1:rounds){
   
   #run simulations
   slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = as.character(i),
-                               nodes = 6, cpus_per_node = 48, pkgs = pkgs,
+                               nodes = 5, cpus_per_node = 48, pkgs = pkgs,
                                global_objects = objects(), slurm_options = list(mem = 0))
 }
