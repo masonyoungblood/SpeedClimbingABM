@@ -49,28 +49,69 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
                            sum_stats = FALSE, plot = FALSE)
-  weighted_euclidean(obs_stats[-1], temp[-1])
+  euclidean(obs_stats[-1], temp[-1])
 }
 
 #store required packages
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
-#number of simulations
-n_sim <- 100000000
+#number of simulations per round
+n_sim <- 1000000
 
-#set priors
-priors <- data.frame(innov_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
-                     learn_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
-                     n_top = runif(n_sim, min = 1, max = 34),
-                     adj_poss = runif(n_sim, 1, 2),
-                     improve_rate_m = runif(n_sim, min = 1, max = 4),
-                     improve_rate_sd = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 2),
-                     improve_min = runif(n_sim, min = 0, max = 0.5))
+#tolerance level per round
+tol <- 0.01
 
-#save priors
-save(priors, file = "prior_table.RData")
+#number of rounds
+rounds <- 10
 
-#run simulations
-slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "main",
-                             nodes = 5, cpus_per_node = 48, pkgs = pkgs,
-                             global_objects = objects(), slurm_options = list(mem = 0))
+for(i in 1:rounds){
+  if(i == 1){
+    #set priors
+    priors <- data.frame(innov_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
+                         learn_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
+                         n_top = runif(n_sim, min = 1, max = 34),
+                         adj_poss = runif(n_sim, 1, 2),
+                         improve_rate_m = runif(n_sim, min = 1, max = 4),
+                         improve_rate_sd = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 2),
+                         improve_min = runif(n_sim, min = 0, max = 0.5))
+  } else{
+    #load simulations from previous round
+    params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
+    results_0 <- readRDS(paste0("_rslurm_", i-1, "/results_0.RDS"))
+    results_1 <- readRDS(paste0("_rslurm_", i-1, "/results_1.RDS"))
+    results_2 <- readRDS(paste0("_rslurm_", i-1, "/results_2.RDS"))
+    results_3 <- readRDS(paste0("_rslurm_", i-1, "/results_3.RDS"))
+    results_4 <- readRDS(paste0("_rslurm_", i-1, "/results_4.RDS"))
+    results_5 <- readRDS(paste0("_rslurm_", i-1, "/results_5.RDS"))
+    results <- c(unlist(results_0), unlist(results_1), unlist(results_2), unlist(results_3), unlist(results_4), unlist(results_5))
+    
+    #get posteriors for each parameter for prior sampling
+    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob), to = max(params$innov_prob))
+    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob), to = max(params$learn_prob))
+    n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top), to = max(params$n_top))
+    adj_poss_post <- density(params$adj_poss[order(results)[1:(n_sim*tol)]], from = min(params$adj_poss), to = max(params$adj_poss))
+    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m))
+    improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd), to = max(params$improve_rate_sd))
+    improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min), to = max(params$improve_min))
+    
+    #remove objects
+    rm(list = c("priors", "slurm", "params", "results_0", "results_1", "results_2", "results_3", "results_4", "results_5", "results"))
+    
+    #set new priors by sampling from posteriors
+    priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
+                         learn_prob = sample(learn_prob_post$x, n_sim, replace = TRUE, prob = learn_prob_post$y),
+                         n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
+                         adj_poss = sample(adj_poss_post$x, n_sim, replace = TRUE, prob = adj_poss_post$y),
+                         improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
+                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y),
+                         improve_min = sample(improve_min_post$x, n_sim, replace = TRUE, prob = improve_min_post$y))
+    
+    #remove objects
+    rm(list = c("innov_prob_post", "learn_prob_post", "n_top_post", "adj_poss_post", "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
+  }
+  
+  #run simulations
+  slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = as.character(i),
+                               nodes = 6, cpus_per_node = 48, pkgs = pkgs,
+                               global_objects = objects(), slurm_options = list(mem = 0))
+}

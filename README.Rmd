@@ -169,9 +169,6 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 Now let's run the model with an initial population size of `r n[1]`, a 0.2 probability of learning from the top 20 climbers, and a 0.2 probability of innovation where no more than 2 adjacent holds can be skipped. The `improve_rate_m` of athletic improvement will be 2, the `improve_rate_sd` will be 0.2, and the `min` improvement possible will be 0.4. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
 
 ```{r, fig.asp=0.6}
-#set seed
-set.seed(1234)
-
 #store starting time
 start <- Sys.time()
 
@@ -194,9 +191,6 @@ output
 Let's do another run of the model, but let's add interaction effects so that climbers with slower times are more likely to learn (`learn_x_times` = 1), climbers with faster times are more likely to innovate (`innov_x_times` = -1), and both learning and innovation become more common as population size increases (`learn_x_pop` and `innov_x_pop` = 1).
 
 ```{r, fig.asp=0.6}
-#set seed
-set.seed(123)
-
 #store starting time
 start <- Sys.time()
 
