@@ -56,24 +56,24 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 1000000
+n_sim <- 4000000
 
 #tolerance level per round
-tol <- 0.01
+tol <- 0.001
 
 #number of rounds
-rounds <- 10
+rounds <- 5
 
 for(i in 1:rounds){
   if(i == 1){
     #set priors
-    priors <- data.frame(innov_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
-                         learn_prob = truncnorm::rtruncnorm(n_sim, a = 0, b = 0.5, mean = 0, sd = 0.1),
-                         n_top = runif(n_sim, min = 1, max = 34),
+    priors <- data.frame(innov_prob = runif(n_sim, 0, 0.5),
+                         learn_prob = runif(n_sim, 0, 0.5),
+                         n_top = runif(n_sim, 1, 34),
                          adj_poss = runif(n_sim, 1, 2),
-                         improve_rate_m = runif(n_sim, min = 1, max = 4),
-                         improve_rate_sd = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 2),
-                         improve_min = runif(n_sim, min = 0, max = 0.5))
+                         improve_rate_m = runif(n_sim, 1, 3),
+                         improve_rate_sd = runif(n_sim, 0, 0.5),
+                         improve_min = runif(n_sim, 0.1, 0.4))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
