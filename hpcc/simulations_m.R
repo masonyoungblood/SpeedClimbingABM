@@ -56,13 +56,13 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 4000000
+n_sim <- 1000000
 
 #tolerance level per round
 tol <- 0.001
 
 #number of rounds
-rounds <- 5
+rounds <- 10
 
 for(i in 1:rounds){
   if(i == 1){
