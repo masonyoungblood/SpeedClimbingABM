@@ -64,7 +64,7 @@ for(i in 1:rounds){
     #set priors
     priors <- data.frame(innov_prob = runif(n_sim, 0, 0.2),
                          learn_prob = runif(n_sim, 0, 1),
-                         n_top = runif(n_sim, 1, 34),
+                         n_top = runif(n_sim, 1, 28),
                          adj_poss = runif(n_sim, 1, 2),
                          improve_rate_m = runif(n_sim, 1, 3),
                          improve_rate_sd = runif(n_sim, 0, 0.35),
