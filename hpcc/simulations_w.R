@@ -3,14 +3,9 @@ setwd(system("pwd", intern = T))
 load("data.RData")
 source("SpeedClimbingABM.R")
 
-#euclidean distance function, where a and b are lists of vectors, with optional weighted (not default)
-euclidean <- function(a, b, weighted = FALSE){
-  divs <- c(length(a):1)
-  if(weighted){
-    return(sum(sapply(1:length(a), function(x){sqrt(sum((a[[x]]-b[[x]])^2)/divs[[x]])})))
-  } else{
-    return(sum(sapply(1:length(a), function(x){sqrt(sum((a[[x]]-b[[x]])^2))})))
-  }
+#euclidean distance function where a and b are the unlisted vectors of times
+euclidean <- function(a, b){
+  return(sqrt(sum((a-b)^2)))
 }
 
 #random seed
@@ -49,20 +44,20 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
                            sum_stats = FALSE, plot = FALSE)
-  euclidean(obs_stats[-1], temp[-1])
+  euclidean(unlist(obs_stats[-1]), unlist(temp[-1]))
 }
 
 #store required packages
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 10000
+n_sim <- 50000
 
 #tolerance level per round
-tol <- 0.01
+tol <- 0.001
 
 #number of rounds
-rounds <- 100
+rounds <- 20
 
 for(i in 1:rounds){
   if(i == 1){
