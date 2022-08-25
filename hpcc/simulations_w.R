@@ -11,7 +11,7 @@ euclidean <- function(a, b){
 #random seed
 set.seed(12345)
 
-#subset data to only include men
+#subset data by gender
 data <- data[which(data$gender == "W"), ]
 
 #get all unique climbers
@@ -51,13 +51,13 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 50000
+n_sim <- 10000
 
 #tolerance level per round
-tol <- 0.001
+tol <- 0.1
 
 #number of rounds
-rounds <- 20
+rounds <- 100
 
 for(i in 1:rounds){
   if(i == 1){
