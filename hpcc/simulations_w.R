@@ -17,7 +17,7 @@ euclidean <- function(a, b, weighted = FALSE){
 set.seed(12345)
 
 #subset data to only include men
-data <- data[which(data$gender == "M"), ]
+data <- data[which(data$gender == "W"), ]
 
 #get all unique climbers
 uniq_climbers <- unique(data$athlete)
