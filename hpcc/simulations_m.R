@@ -39,7 +39,7 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, improve_rate_m, improve_rate_sd, improve_min){
+SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, adj_poss, improve_rate_m, improve_rate_sd, improve_min){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
@@ -63,7 +63,11 @@ for(i in 1:rounds){
   if(i == 1){
     #set priors
     priors <- data.frame(innov_prob = runif(n_sim, 0, 0.2),
+                         innov_x_times = rnorm(n_sim, 0, 0.5), 
+                         innov_x_pop = rnorm(n_sim, 0, 0.5), 
                          learn_prob = runif(n_sim, 0, 1),
+                         learn_x_times = rnorm(n_sim, 0, 0.5),
+                         learn_x_pop = rnorm(n_sim, 0, 0.5),
                          n_top = runif(n_sim, 1, 34),
                          adj_poss = runif(n_sim, 1, 2),
                          improve_rate_m = runif(n_sim, 1, 3),
@@ -75,7 +79,11 @@ for(i in 1:rounds){
     
     #get posteriors for each parameter for prior sampling
     innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob), to = max(params$innov_prob))
+    innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_times), to = max(params$innov_x_times))
+    innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_pop), to = max(params$innov_x_pop))
     learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob), to = max(params$learn_prob))
+    learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_times), to = max(params$learn_x_times))
+    learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_pop), to = max(params$learn_x_pop))
     n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top), to = max(params$n_top))
     adj_poss_post <- density(params$adj_poss[order(results)[1:(n_sim*tol)]], from = min(params$adj_poss), to = max(params$adj_poss))
     improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m))
@@ -87,7 +95,11 @@ for(i in 1:rounds){
     
     #set new priors by sampling from posteriors
     priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
+                         innov_x_times = sample(innov_x_times_post$x, n_sim, replace = TRUE, prob = innov_x_times_post$y),
+                         innov_x_pop = sample(innov_x_pop_post$x, n_sim, replace = TRUE, prob = innov_x_pop_post$y),
                          learn_prob = sample(learn_prob_post$x, n_sim, replace = TRUE, prob = learn_prob_post$y),
+                         learn_x_times = sample(learn_x_times_post$x, n_sim, replace = TRUE, prob = learn_x_times_post$y),
+                         learn_x_pop = sample(learn_x_pop_post$x, n_sim, replace = TRUE, prob = learn_x_pop_post$y),
                          n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
                          adj_poss = sample(adj_poss_post$x, n_sim, replace = TRUE, prob = adj_poss_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
@@ -95,7 +107,9 @@ for(i in 1:rounds){
                          improve_min = sample(improve_min_post$x, n_sim, replace = TRUE, prob = improve_min_post$y))
     
     #remove objects
-    rm(list = c("innov_prob_post", "learn_prob_post", "n_top_post", "adj_poss_post", "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
+    rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post",
+                "learn_prob_post", "learn_x_times_post", "learn_x_pop_post",
+                "n_top_post", "adj_poss_post", "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
   }
   
   #run simulations

@@ -134,11 +134,11 @@ After the first timestep, each new climber that joins the population will be ini
 
 For our study, we want to add some interaction effects between innovation, social learning, ranking, and population size. More specifically, we want to innovation and social learning change with climbers' current rankings and with population size. To do this, we will adjust the mean innovation and social learning rates of the population with the following two equations for innovation and social learning, respectively:
 
-$$\mu = \mu_{avg} + (\mu_{avg} * t_{norm} * {\phi}) + (\mu_{avg} * p_{norm} * {\omega})$$
+$$logit(\mu) = logit(\mu_{avg}) + t_{scale} * {\phi} + p_{scale} * {\omega}$$
 
-$$\lambda = \lambda_{avg} + (\lambda_{avg} * t_{norm} * {\epsilon}) + (\lambda_{avg} * p_{norm} * {\sigma})$$
+$$logit(\lambda) = logit(\lambda_{avg}) + t_{scale} * {\epsilon} + p_{scale} * {\sigma}$$
 
-In each case there are three parameters in play. For innovation ($\mu$) there is the population average ($\mu_{avg}$), the effect of a climber's record time ($\phi$), and the effect of population size ($\omega$). The effects of time and population size are computed as follows: (1) all values are collected and normalize to be between -0.5 and 0.5 (to prevent $\mu$ from taking a value that is negative or greater than 1), (2) the normalized values are multiplied by number between -1 and 1, where the sign and absolute value control the direction and strength of the effect, respectively, and (3) the values are the multiplied by the innovation rate. Social learning is computed identically.
+The calculations are done on the logit scale so that everything remains between 0 and 1. In each case there are three parameters in play. For innovation ($\mu$) there is the population average ($\mu_{avg}$), the effect of a climber's record time ($\phi$), and the effect of population size ($\omega$). The effects of time and population size are computed as follows: (1) all values are scaled and centered with a mean of 0 and standard deviation of 1, (2) the scale values are multiplied by number between -1 and 1, where the sign and absolute value control the direction and strength of the effect, respectively, and (3) the values are the multiplied by the logit-transformed innovation rate. Social learning is computed identically.
 
 ## Test Run
 

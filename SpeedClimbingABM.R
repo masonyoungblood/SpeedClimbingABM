@@ -2,9 +2,11 @@
 # FUNCTIONS ---------------------------------------------------------------
 
 #bounded exponential function for athletic improvement
-bounded_exp <- function(x, rate, min){
-  return((1-min)*(rate/rate^x)+min)
-}
+bounded_exp <- function(x, rate, min){return((1-min)*(rate/rate^x)+min)}
+
+#logit functions for interactions
+logit <- function(p){return(log(p/(1-p)))}
+inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 
 # #parameter definition for manual debugging
 # n_holds <- 20
@@ -36,10 +38,10 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   #colors for plotting after each timepoint
   colors <- rainbow((length(n)-1)*1.25) #times 1.2 so it doesn't loop back around
   
-  #get booleans for whether learning and innovation needs to be individually calculated, and normalize population size
+  #get booleans for whether learning and innovation needs to be individually calculated, and scale and center population size
   learn_bool <- learn_x_times > 0 | learn_x_pop > 0
   innov_bool <- innov_x_times > 0 | innov_x_pop > 0
-  n_norm <- BBmisc::normalize(n, "range", c(-0.5, 0.5))
+  n_scale <- scale(n)
   
   #initialize starting beta for all agents
   beta <- sample(c(TRUE, FALSE), n_holds, prob = c(beta_true_prob, 1-beta_true_prob), replace = TRUE)
@@ -71,9 +73,9 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
     top_climbers <- order(climbers$current_record)[1:n_top]
     
     #if needed, calculate the unique learn_prob and innov_prob for each old and new climber in this timestep
-    t_norm <- BBmisc::normalize(1/climbers$current_record, "range", c(-0.5, 0.5)) #take inverse of current record so smaller is better
-    if(learn_bool){learn_prob_ind <- sapply(1:nrow(climbers), function(x){learn_prob + learn_prob*t_norm[x]*learn_x_times + learn_prob*n_norm[i]*learn_x_pop})}
-    if(innov_bool){innov_prob_ind <- sapply(1:nrow(climbers), function(x){innov_prob + innov_prob*t_norm[x]*innov_x_times + innov_prob*n_norm[i]*innov_x_pop})}
+    t_scale <- scale(climbers$current_record)
+    if(learn_bool){learn_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(learn_prob) + learn_x_times*t_scale[x] + learn_x_pop*n_scale[i])})}
+    if(innov_bool){innov_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(innov_prob) + innov_x_times*t_scale[x] + innov_x_pop*n_scale[i])})}
     
     #get who will learn
     if(learn_bool){to_learn <- sapply(1:nrow(climbers), function(x){sample(c(TRUE, FALSE), 1, prob = c(learn_prob_ind[x], 1-learn_prob_ind[x]))})}
