@@ -57,7 +57,7 @@ n_sim <- 10000
 tol <- 0.1
 
 #number of rounds
-rounds <- 100
+rounds <- 500
 
 for(i in 1:rounds){
   if(i == 1){
