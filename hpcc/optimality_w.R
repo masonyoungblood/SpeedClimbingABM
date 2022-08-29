@@ -7,7 +7,7 @@ source("SpeedClimbingABM.R")
 set.seed(12345)
 
 #subset data by gender
-data <- data[which(data$gender == "M"), ]
+data <- data[which(data$gender == "W"), ]
 
 #get all unique climbers
 uniq_climbers <- unique(data$athlete)
@@ -31,8 +31,8 @@ years <- sort(unique(data$year))
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 
 #load main simulation data
-n_m <- 500
-temp <- paste0("simulations_m/_rslurm_", n_m)
+n_w <- 500
+temp <- paste0("simulations_w/_rslurm_", n_w)
 params <- readRDS(paste0(temp, "/params.RDS"))
 results <- c(unlist(readRDS(paste0(temp, "/results_0.RDS"))),
              unlist(readRDS(paste0(temp, "/results_1.RDS"))), 
@@ -83,6 +83,6 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, adj_poss, impr
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #run simulations
-slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "opt_m",
+slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "opt_w",
                              nodes = 5, cpus_per_node = 48, pkgs = pkgs,
                              global_objects = objects(), slurm_options = list(mem = 0))
