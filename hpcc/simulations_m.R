@@ -40,9 +40,9 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, adj_poss, improve_rate_m, improve_rate_sd, improve_min){
+SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, constraint, improve_rate_m, improve_rate_sd, improve_min){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
-                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
+                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, constraint = constraint, 
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
                            sum_stats = FALSE, plot = FALSE)
   euclidean(unlist(obs_stats[-1]), unlist(temp[-1]))
