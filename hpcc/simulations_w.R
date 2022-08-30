@@ -1,6 +1,7 @@
 #set working directory, load data, source code
 setwd(system("pwd", intern = T))
 load("data.RData")
+grid <- read.csv("grid.csv")/1000
 source("SpeedClimbingABM.R")
 
 #euclidean distance function where a and b are the unlisted vectors of times
@@ -40,7 +41,7 @@ obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
 SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, adj_poss, improve_rate_m, improve_rate_sd, improve_min){
-  temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, n_holds = 20,
+  temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, adj_poss = adj_poss, 
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
                            sum_stats = FALSE, plot = FALSE)
@@ -69,7 +70,7 @@ for(i in 1:rounds){
                          learn_x_times = rnorm(n_sim, 0, 0.5),
                          learn_x_pop = rnorm(n_sim, 0, 0.5),
                          n_top = runif(n_sim, 1, 28),
-                         adj_poss = runif(n_sim, 1, 2),
+                         constraint = runif(n_sim, 0, 6),
                          improve_rate_m = runif(n_sim, 1, 3),
                          improve_rate_sd = runif(n_sim, 0, 0.35),
                          improve_min = runif(n_sim, 0.15, 0.35))
@@ -85,7 +86,7 @@ for(i in 1:rounds){
     learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_times), to = max(params$learn_x_times))
     learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_pop), to = max(params$learn_x_pop))
     n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top), to = max(params$n_top))
-    adj_poss_post <- density(params$adj_poss[order(results)[1:(n_sim*tol)]], from = min(params$adj_poss), to = max(params$adj_poss))
+    constraint_post <- density(params$constraint[order(results)[1:(n_sim*tol)]], from = min(params$constraint), to = max(params$constraint))
     improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m))
     improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd), to = max(params$improve_rate_sd))
     improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min), to = max(params$improve_min))
@@ -101,7 +102,7 @@ for(i in 1:rounds){
                          learn_x_times = sample(learn_x_times_post$x, n_sim, replace = TRUE, prob = learn_x_times_post$y),
                          learn_x_pop = sample(learn_x_pop_post$x, n_sim, replace = TRUE, prob = learn_x_pop_post$y),
                          n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
-                         adj_poss = sample(adj_poss_post$x, n_sim, replace = TRUE, prob = adj_poss_post$y),
+                         constraint = sample(constraint_post$x, n_sim, replace = TRUE, prob = constraint_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
                          improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y),
                          improve_min = sample(improve_min_post$x, n_sim, replace = TRUE, prob = improve_min_post$y))
@@ -109,7 +110,7 @@ for(i in 1:rounds){
     #remove objects
     rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post",
                 "learn_prob_post", "learn_x_times_post", "learn_x_pop_post",
-                "n_top_post", "adj_poss_post", "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
+                "n_top_post", "constraint_post", "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
   }
   
   #run simulations

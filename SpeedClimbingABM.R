@@ -11,10 +11,10 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # #parameter definition for manual debugging
 # n_holds <- 20
 # beta_true_prob <- 1
-# innov_prob <- 0.1
+# innov_prob <- 0.5
 # innov_x_times <- 0
 # innov_x_pop <- 0
-# learn_prob <- 0.1
+# learn_prob <- 0.5
 # learn_x_times <- 0
 # learn_x_pop <- 0
 # n_top <- 10
@@ -24,13 +24,13 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # improve_min <- 0.8
 # sd_multiplier <- 0.5
 # sum_stats <- TRUE
-# plot <- TRUE
+# plot <- FALSE
 # bw <- 1
 # ylim <- 0.3
 # quant_by <- 0.2
 
 #function for the model
-SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3, quant_by = 0.1){
+SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss = 2, constraint = 0, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #round integer params
   n_top <- round(n_top)
   adj_poss <- round(adj_poss)
@@ -69,7 +69,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   
   #iterate over time
   for(i in 2:length(n)){
-    #get top n climbers for each climber to compare themselves with
+  #get top n climbers for each climber to compare themselves with
     top_climbers <- order(climbers$current_record)[1:n_top]
     
     #if needed, calculate the unique learn_prob and innov_prob for each old and new climber in this timestep
@@ -119,42 +119,67 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
         if(length(which(beta_a == FALSE) > 0)){
           #iterate through beta and figure out which positions are okay to flip (do not create strings of FALSE that exceed adj_poss)
           ok_holds <- which(sapply(1:length(beta_a), function(x){
-            #make copy of beta_a to test whether position is okay
-            temp <- beta_a
-            temp[x] <- !temp[x]
-            
-            #if the flip doesn't change everything to TRUE (rare case that throws warning)
-            if(length(which(temp == FALSE) > 0)){
-              #if the maximum string of FALSEs, assuming this position flips, is less than or equal to adj_poss, then it's okay to flip
-              if(max(rle(temp)$lengths[which(rle(temp)$values == FALSE)]) <= adj_poss){
-                return(TRUE)
+            if(x %in% c(1, 2)){ #skip starting holds
+              return(FALSE)
+            } else if(isFALSE(beta_a[x])){ #only flip TRUE to FALSE
+              return(FALSE)
+            } else{ #otherwise
+              #make copy of beta_a to test whether position is okay
+              temp <- beta_a
+              temp[x] <- !temp[x]
+              
+              #if the flip doesn't change everything to TRUE (rare case that throws warning)
+              if(length(which(temp == FALSE) > 0)){
+                #if the maximum string of FALSEs, assuming this position flips, is less than or equal to adj_poss, then it's okay to flip
+                if(max(rle(temp)$lengths[which(rle(temp)$values == FALSE)]) <= adj_poss){
+                  return(TRUE)
+                } else{
+                  return(FALSE)
+                }
               } else{
-                return(FALSE)
+                return(TRUE)
               }
-            } else{
-              return(TRUE)
+              
+              #remove temp object
+              rm(temp)
             }
-            
-            #remove temp object
-            rm(temp)
           }))
         } else{
-          ok_holds <- c(1:n_holds)
+          #everything okay except starting holds
+          ok_holds <- c(3:n_holds)
         }
         
         #make a copy
         beta_b <- beta_a
         seq_ratios_b <- seq_ratios_a
         
+        #get euclidean distances between adjacent holds for each option
+        euc_dists <- sapply(1:length(ok_holds), function(x){
+          #store adjacent distances (with added TRUE for final buzzer)
+          adj_dists <- which(c(beta_b, TRUE))-ok_holds[x]
+          
+          #get used hold below and above
+          lower_adj <- which(c(beta_b, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+          upper_adj <- which(c(beta_b, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
+          
+          #return euclidean distance between them
+          return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
+        })
+        
         #choose position to flip
-        beta_to_flip <- sample(ok_holds, 1)
+        beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
+        
+        #get used hold below and above flipped beta for resampling times
+        adj_dists <- which(c(beta_b, TRUE))-beta_to_flip
+        lower_adj <- which(c(beta_b, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+        upper_adj <- which(c(beta_b, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
         
         #flip a position into copied beta
-        beta_b[beta_to_flip] <- !beta_b[beta_to_flip]
+        beta_b[beta_to_flip] <- FALSE
         
         #resample adjacent seq_ratios
-        seq_ratios_b[ok_holds[which(ok_holds == beta_to_flip)-1]] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-        seq_ratios_b[ok_holds[which(ok_holds == beta_to_flip)+1]] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+        seq_ratios_b[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+        seq_ratios_b[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
         
         #decide which is better
         sum_a <- sum(seq_ratios_a[beta_a])
@@ -167,7 +192,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
         }
         
         #remove temporary objects
-        rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "beta_b", "seq_ratios_b", "beta_to_flip", "sum_a", "sum_b"))
+        rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "beta_b", "seq_ratios_b", "euc_dists", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj", "sum_a", "sum_b"))
       }
     }
     
