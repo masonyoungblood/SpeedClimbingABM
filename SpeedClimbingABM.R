@@ -119,7 +119,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
         if(length(which(beta_a == FALSE) > 0)){
           #iterate through beta and figure out which positions are okay to flip (do not create strings of FALSE that exceed adj_poss)
           ok_holds <- which(sapply(1:length(beta_a), function(x){
-            if(x %in% c(1, 2)){ #skip starting holds
+            if(x == 1){ #skip starting hold
               return(FALSE)
             } else if(isFALSE(beta_a[x])){ #only flip TRUE to FALSE
               return(FALSE)
@@ -145,54 +145,44 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
             }
           }))
         } else{
-          #everything okay except starting holds
-          ok_holds <- c(3:n_holds)
+          #everything okay except starting hold
+          ok_holds <- c(2:n_holds)
         }
-        
-        #make a copy
-        beta_b <- beta_a
-        seq_ratios_b <- seq_ratios_a
         
         #get euclidean distances between adjacent holds for each option
         euc_dists <- sapply(1:length(ok_holds), function(x){
           #store adjacent distances (with added TRUE for final buzzer)
-          adj_dists <- which(c(beta_b, TRUE))-ok_holds[x]
+          adj_dists <- which(c(beta_a, TRUE))-ok_holds[x]
           
           #get used hold below and above
-          lower_adj <- which(c(beta_b, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
-          upper_adj <- which(c(beta_b, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
+          lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+          upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
           
           #return euclidean distance between them
           return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
         })
         
         #choose position to flip
-        beta_to_flip <- sample(ok_holds, 1, prob = (1-(euc_dists/max(euc_dists)))^constraint)
+        beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
         
         #get used hold below and above flipped beta for resampling times
-        adj_dists <- which(c(beta_b, TRUE))-beta_to_flip
-        lower_adj <- which(c(beta_b, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
-        upper_adj <- which(c(beta_b, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
+        adj_dists <- which(c(beta_a, TRUE))-beta_to_flip
+        lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+        upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
         
         #flip a position into copied beta
-        beta_b[beta_to_flip] <- FALSE
+        beta_a[beta_to_flip] <- FALSE
         
         #resample adjacent seq_ratios
-        seq_ratios_b[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-        seq_ratios_b[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+        seq_ratios_a[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+        seq_ratios_a[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
         
-        #decide which is better
-        sum_a <- sum(seq_ratios_a[beta_a])
-        sum_b <- sum(seq_ratios_b[beta_b])
-        
-        #if new one is better, then overwrite current
-        if(sum_b < sum_a){
-          climbers$beta[[j]] <- beta_b
-          climbers$seq_ratios[[j]] <- seq_ratios_b
-        }
+        #overwrite current
+        climbers$beta[[j]] <- beta_a
+        climbers$seq_ratios[[j]] <- seq_ratios_a
         
         #remove temporary objects
-        rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "beta_b", "seq_ratios_b", "euc_dists", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj", "sum_a", "sum_b"))
+        rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "euc_dists", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj"))
       }
     }
     

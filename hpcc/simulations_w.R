@@ -70,9 +70,9 @@ for(i in 1:rounds){
                          learn_x_times = rnorm(n_sim, 0, 0.5),
                          learn_x_pop = rnorm(n_sim, 0, 0.5),
                          n_top = runif(n_sim, 1, 28),
-                         constraint = runif(n_sim, 0, 6),
+                         constraint = runif(n_sim, 0, 2),
                          improve_rate_m = runif(n_sim, 1, 3),
-                         improve_rate_sd = runif(n_sim, 0, 0.35),
+                         improve_rate_sd = runif(n_sim, 0, 0.1),
                          improve_min = runif(n_sim, 0.15, 0.35))
   } else{
     #load parameters from previous round
