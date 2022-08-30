@@ -94,9 +94,9 @@ grid <- grid/1000
 
 #plot distribution of inverse distances when constraint = {0.5, 1, 2}
 par(mar = c(4, 4, 1, 1))
-plot(density((1/sapply(3:(nrow(grid)-1), function(x){sqrt((grid$x[x+1] - grid$x[x-1])^2 + (grid$y[x+1] - grid$y[x-1])^2)}))^0.5), main = "", xlab = "Exponentiated Inverse Distances", xlim = c(0, 2), col = "blue")
-lines(density((1/sapply(3:(nrow(grid)-1), function(x){sqrt((grid$x[x+1] - grid$x[x-1])^2 + (grid$y[x+1] - grid$y[x-1])^2)}))^1), col = "black")
-lines(density((1/sapply(3:(nrow(grid)-1), function(x){sqrt((grid$x[x+1] - grid$x[x-1])^2 + (grid$y[x+1] - grid$y[x-1])^2)}))^2), col = "red")
+plot(density((1/sapply(3:(nrow(grid)-1), function(x){sqrt((grid$x[x+1] - grid$x[x-1])^2 + (grid$y[x+1] - grid$y[x-1])^2)}))^0.5, from = 0), main = "", xlab = "Exponentiated Inverse Distances", xlim = c(0, 2), col = "blue")
+lines(density((1/sapply(3:(nrow(grid)-1), function(x){sqrt((grid$x[x+1] - grid$x[x-1])^2 + (grid$y[x+1] - grid$y[x-1])^2)}))^1, from = 0), col = "black")
+lines(density((1/sapply(3:(nrow(grid)-1), function(x){sqrt((grid$x[x+1] - grid$x[x-1])^2 + (grid$y[x+1] - grid$y[x-1])^2)}))^2, from = 0), col = "red")
 ```
 
 
