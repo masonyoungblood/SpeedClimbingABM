@@ -11,7 +11,7 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # #parameter definition for manual debugging
 # n_holds <- 20
 # beta_true_prob <- 1
-# innov_prob <- 0.5
+# innov_prob <- 0.98
 # innov_x_times <- 0
 # innov_x_pop <- 0
 # learn_prob <- 0.5
@@ -19,6 +19,7 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # learn_x_pop <- 0
 # n_top <- 10
 # adj_poss <- 2
+# constraint <- 2
 # improve_rate_m <- 2
 # improve_rate_sd <- 0.5
 # improve_min <- 0.8
@@ -69,7 +70,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   
   #iterate over time
   for(i in 2:length(n)){
-  #get top n climbers for each climber to compare themselves with
+    #get top n climbers for each climber to compare themselves with
     top_climbers <- order(climbers$current_record)[1:n_top]
     
     #if needed, calculate the unique learn_prob and innov_prob for each old and new climber in this timestep
@@ -149,40 +150,58 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
           ok_holds <- c(2:n_holds)
         }
         
-        #get euclidean distances between adjacent holds for each option
-        euc_dists <- sapply(1:length(ok_holds), function(x){
-          #store adjacent distances (with added TRUE for final buzzer)
-          adj_dists <- which(c(beta_a, TRUE))-ok_holds[x]
+        #if any holds are available
+        if(length(ok_holds) >= 1){
+          #and there's more than one
+          if(length(ok_holds) > 1){
+            #get euclidean distances between adjacent holds for each option
+            euc_dists <- sapply(1:length(ok_holds), function(x){
+              #store adjacent distances (with added TRUE for final buzzer)
+              adj_dists <- which(c(beta_a, TRUE))-ok_holds[x]
+              
+              #get used hold below and above
+              lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+              upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
+              
+              #return euclidean distance between them
+              return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
+            })
+            
+            #choose position to flip
+            beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
+            
+            #remove temp object
+            rm(euc_dists)
+          }
           
-          #get used hold below and above
+          #if there's only one
+          if(length(ok_holds) == 1){
+            #go ahead and flip it
+            beta_to_flip <- ok_holds
+          }
+          
+          #get used hold below and above flipped beta for resampling times
+          adj_dists <- which(c(beta_a, TRUE))-beta_to_flip
           lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
           upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
           
-          #return euclidean distance between them
-          return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
-        })
-        
-        #choose position to flip
-        beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
-        
-        #get used hold below and above flipped beta for resampling times
-        adj_dists <- which(c(beta_a, TRUE))-beta_to_flip
-        lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
-        upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
-        
-        #flip a position into copied beta
-        beta_a[beta_to_flip] <- FALSE
-        
-        #resample adjacent seq_ratios
-        seq_ratios_a[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-        seq_ratios_a[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-        
-        #overwrite current
-        climbers$beta[[j]] <- beta_a
-        climbers$seq_ratios[[j]] <- seq_ratios_a
-        
-        #remove temporary objects
-        rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "euc_dists", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj"))
+          #flip a position into copied beta
+          beta_a[beta_to_flip] <- FALSE
+          
+          #resample adjacent seq_ratios
+          seq_ratios_a[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+          seq_ratios_a[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+          
+          #overwrite current
+          climbers$beta[[j]] <- beta_a
+          climbers$seq_ratios[[j]] <- seq_ratios_a
+          
+          #remove temporary objects
+          rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj"))
+        } else{
+          #remove temporary objects
+          rm(list = c("beta_a", "seq_ratios_a", "ok_holds"))
+        }
       }
     }
     

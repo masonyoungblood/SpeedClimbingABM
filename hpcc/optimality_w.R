@@ -85,6 +85,6 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, constraint, im
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #run simulations
-slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "opt_m",
+slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "opt_w",
                              nodes = 5, cpus_per_node = 48, pkgs = pkgs,
                              global_objects = objects(), slurm_options = list(mem = 0))
