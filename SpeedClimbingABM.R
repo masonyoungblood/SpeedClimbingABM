@@ -11,15 +11,16 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # #parameter definition for manual debugging
 # n_holds <- 20
 # beta_true_prob <- 1
-# innov_prob <- 0.98
+# innov_prob <- 0.2
 # innov_x_times <- 0
 # innov_x_pop <- 0
-# learn_prob <- 0.5
+# learn_prob <- 0.2
 # learn_x_times <- 0
 # learn_x_pop <- 0
 # n_top <- 10
 # adj_poss <- 2
-# constraint <- 2
+# max_dist <- 2
+# constraint <- 1
 # improve_rate_m <- 2
 # improve_rate_sd <- 0.5
 # improve_min <- 0.8
@@ -31,7 +32,12 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # quant_by <- 0.2
 
 #function for the model
-SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss = 2, constraint = 0, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, bw = 1, ylim = 0.3, quant_by = 0.1){
+SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss = 2, max_dist, constraint, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
+  #handle output booleans
+  if(raw){
+    sum_stats <- FALSE
+  }
+  
   #round integer params
   n_top <- round(n_top)
   adj_poss <- round(adj_poss)
@@ -60,7 +66,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   
   #store the output from initialization
   if(sum_stats){output[[1]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
-  if(!sum_stats){output[[1]] <- sort(climbers$current_record)}
+  if(!sum_stats & !raw){output[[1]] <- sort(climbers$current_record)}
   
   #initialize plot
   if(plot){
@@ -141,7 +147,6 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
                 return(TRUE)
               }
               
-              #remove temp object
               rm(temp)
             }
           }))
@@ -152,56 +157,62 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
         
         #if any holds are available
         if(length(ok_holds) >= 1){
-          #and there's more than one
-          if(length(ok_holds) > 1){
-            #get euclidean distances between adjacent holds for each option
-            euc_dists <- sapply(1:length(ok_holds), function(x){
-              #store adjacent distances (with added TRUE for final buzzer)
-              adj_dists <- which(c(beta_a, TRUE))-ok_holds[x]
-              
-              #get used hold below and above
-              lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
-              upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
-              
-              #return euclidean distance between them
-              return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
-            })
+          #get euclidean distances between adjacent holds for each option
+          euc_dists <- sapply(1:length(ok_holds), function(x){
+            #store adjacent distances (with added TRUE for final buzzer)
+            adj_dists <- which(c(beta_a, TRUE))-ok_holds[x]
             
-            #choose position to flip
-            beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
+            #get used hold below and above
+            lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+            upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
             
-            #remove temp object
-            rm(euc_dists)
+            #return euclidean distance between them
+            return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
+          })
+          
+          #only include holds less than maximum distance
+          ok_holds <- ok_holds[which(euc_dists <= max_dist)]
+          
+          #store length for boolean statements
+          ok_length <- length(ok_holds)
+          
+          #if there is anything left
+          if(ok_length > 0){
+            #if there's only one
+            if(ok_length == 1){
+              #go ahead and flip it
+              beta_to_flip <- ok_holds
+            }
+            
+            if(ok_length> 1){
+              #subset distances for weighted sampling
+              euc_dists <- euc_dists[which(euc_dists <= max_dist)]
+              
+              #choose position to flip
+              beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
+            }
+            
+            #get used hold below and above flipped beta for resampling times
+            adj_dists <- which(c(beta_a, TRUE))-beta_to_flip
+            lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+            upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
+            
+            #flip a position into copied beta
+            beta_a[beta_to_flip] <- FALSE
+            
+            #resample adjacent seq_ratios
+            seq_ratios_a[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+            seq_ratios_a[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+            
+            #overwrite current
+            climbers$beta[[j]] <- beta_a
+            climbers$seq_ratios[[j]] <- seq_ratios_a
+            
+            rm(list = c("euc_dists", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj"))
           }
-          
-          #if there's only one
-          if(length(ok_holds) == 1){
-            #go ahead and flip it
-            beta_to_flip <- ok_holds
-          }
-          
-          #get used hold below and above flipped beta for resampling times
-          adj_dists <- which(c(beta_a, TRUE))-beta_to_flip
-          lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
-          upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
-          
-          #flip a position into copied beta
-          beta_a[beta_to_flip] <- FALSE
-          
-          #resample adjacent seq_ratios
-          seq_ratios_a[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-          seq_ratios_a[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-          
-          #overwrite current
-          climbers$beta[[j]] <- beta_a
-          climbers$seq_ratios[[j]] <- seq_ratios_a
-          
-          #remove temporary objects
-          rm(list = c("beta_a", "seq_ratios_a", "ok_holds", "beta_to_flip", "adj_dists", "lower_adj", "upper_adj"))
-        } else{
-          #remove temporary objects
-          rm(list = c("beta_a", "seq_ratios_a", "ok_holds"))
         }
+        
+        rm(list = c("beta_a", "seq_ratios_a", "ok_holds"))
       }
     }
     
@@ -237,7 +248,6 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
     if(sum_stats){output[[i]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
     if(!sum_stats){output[[i]] <- sort(climbers$current_record)}
     
-    #remove objects
     rm(list = c("top_climbers", "add_inds", "new_climbers", "to_learn", "to_flip"))
     if(learn_bool){rm(learn_prob_ind)}
     if(innov_bool){rm(innov_prob_ind)}
@@ -245,5 +255,6 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   
   #return output
   if(sum_stats){return(do.call(rbind, output))}
-  if(!sum_stats){return(output)}
+  if(!sum_stats & !raw){return(output)}
+  if(raw){return(climbers)}
 }

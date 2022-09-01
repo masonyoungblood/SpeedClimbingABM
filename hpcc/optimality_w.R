@@ -78,7 +78,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, constraint, im
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, constraint = constraint, 
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = improve_min,
                            sum_stats = FALSE, plot = FALSE)
-  median(temp[[length(n)]])
+  temp[[length(n)]]
 }
 
 #store required packages
