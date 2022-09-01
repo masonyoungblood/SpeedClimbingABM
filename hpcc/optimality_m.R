@@ -53,7 +53,7 @@ improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:tol]], f
 improve_min_post <- density(params$improve_min[order(results)[1:tol]], from = min(params$improve_min[order(results)[1:tol]]), to = max(params$improve_min[order(results)[1:tol]]))
 
 #store number of simulations per pixel
-n_sim <- 50
+n_sim <- 100
 
 #store dimension of matrix to explore
 dim <- 50
