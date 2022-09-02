@@ -4,9 +4,9 @@ load("data.RData")
 grid <- read.csv("grid.csv")/1000
 source("SpeedClimbingABM.R")
 
-#euclidean distance function where a and b are the unlisted vectors of times
-euclidean <- function(a, b){
-  return(sqrt(sum((a-b)^2)))
+#euclidean distance function
+euclidean <- function(obs_stats, sum_stats){
+  return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))*(x/length(obs_stats))})))
 }
 
 #random seed
@@ -46,7 +46,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn
                            n_top = n_top, max_dist = max_dist, constraint = constraint,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, 
                            improve_min = improve_min, sum_stats = FALSE, plot = FALSE)
-  euclidean(unlist(obs_stats[-1]), unlist(temp[-1]))
+  euclidean(obs_stats, temp)
 }
 
 #store required packages
@@ -72,7 +72,7 @@ for(i in 1:rounds){
                          learn_x_pop = rnorm(n_sim, 0, 1),
                          n_top = runif(n_sim, 1, 28),
                          max_dist = runif(n_sim, 0.7905694, 3.482097),
-                         constraint = runif(n_sim, 0, 4),
+                         constraint = runif(n_sim, 0, 2),
                          improve_rate_m = runif(n_sim, 1, 4),
                          improve_rate_sd = runif(n_sim, 0, 0.5),
                          improve_min = runif(n_sim, 0, 1))
