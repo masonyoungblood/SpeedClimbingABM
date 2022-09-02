@@ -122,49 +122,19 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
         beta_a <- climbers$beta[[j]]
         seq_ratios_a <- climbers$seq_ratios[[j]]
         
-        #if there are any FALSE positions
-        if(length(which(beta_a == FALSE) > 0)){
-          #iterate through beta and figure out which positions are okay to flip (do not create strings of FALSE that exceed adj_poss)
-          ok_holds <- which(sapply(1:length(beta_a), function(x){
-            if(x == 1){ #skip starting hold
-              return(FALSE)
-            } else if(isFALSE(beta_a[x])){ #only flip TRUE to FALSE
-              return(FALSE)
-            } else{ #otherwise
-              #make copy of beta_a to test whether position is okay
-              temp <- beta_a
-              temp[x] <- !temp[x]
-              
-              #if the flip doesn't change everything to TRUE (rare case that throws warning)
-              if(length(which(temp == FALSE) > 0)){
-                #if the maximum string of FALSEs, assuming this position flips, is less than or equal to adj_poss, then it's okay to flip
-                if(max(rle(temp)$lengths[which(rle(temp)$values == FALSE)]) <= adj_poss){
-                  return(TRUE)
-                } else{
-                  return(FALSE)
-                }
-              } else{
-                return(TRUE)
-              }
-              
-              rm(temp)
-            }
-          }))
-        } else{
-          #everything okay except starting hold
-          ok_holds <- c(2:n_holds)
-        }
+        #store holds used (skipping first hold since it cannot be flipped)
+        ok_holds <- which(beta_a)[-1]
         
         #if any holds are available
         if(length(ok_holds) >= 1){
           #get euclidean distances between adjacent holds for each option
           euc_dists <- sapply(1:length(ok_holds), function(x){
-            #store adjacent distances (with added TRUE for final buzzer)
-            adj_dists <- which(c(beta_a, TRUE))-ok_holds[x]
+            #store adjacent distances (with added TRUEs for first hold and final buzzer)
+            adj_dists <- c(1, ok_holds, n_holds+1)-ok_holds[x]
             
             #get used hold below and above
-            lower_adj <- which(c(beta_a, TRUE))[which.min(abs(adj_dists[which(adj_dists < 0)]))]
-            upper_adj <- which(c(beta_a, TRUE))[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
+            lower_adj <- c(1, ok_holds, n_holds+1)[which.min(abs(adj_dists[which(adj_dists < 0)]))]
+            upper_adj <- c(1, ok_holds, n_holds+1)[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
             
             #return euclidean distance between them
             return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
