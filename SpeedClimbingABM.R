@@ -18,7 +18,6 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # learn_x_times <- 0
 # learn_x_pop <- 0
 # n_top <- 10
-# adj_poss <- 2
 # max_dist <- 2
 # constraint <- 1
 # improve_rate_m <- 2
@@ -32,7 +31,7 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # quant_by <- 0.2
 
 #function for the model
-SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, adj_poss = 2, max_dist, constraint, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
+SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, max_dist, constraint = 0, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #handle output booleans
   if(raw){
     sum_stats <- FALSE
@@ -40,8 +39,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   
   #round integer params
   n_top <- round(n_top)
-  adj_poss <- round(adj_poss)
-  
+
   #colors for plotting after each timepoint
   colors <- rainbow((length(n)-1)*1.25) #times 1.2 so it doesn't loop back around
   
@@ -154,7 +152,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
               beta_to_flip <- ok_holds
             }
             
-            if(ok_length> 1){
+            if(ok_length > 1){
               #subset distances for weighted sampling
               euc_dists <- euc_dists[which(euc_dists <= max_dist)]
               

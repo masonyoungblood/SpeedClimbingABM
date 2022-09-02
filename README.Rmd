@@ -79,7 +79,7 @@ par(mar = c(4, 4, 1, 1))
 plot(to_plot$x, to_plot$y, type = "l", xlab = "Time (s)", ylab = "Hold #")
 ```
 
-In each timestep, each climber has a certain `innov_prob` probability of innovation. Innovations are changes to the beta of the route, in this case flipping one of the booleans of the `beta` vector from TRUE to FALSE. Not all boolean flips are possible. We will include a parameter `max_dist` that controls the maximum travel distance (Euclidean distance in meters) that a climber can travel after skipping a hold. The prior for this parameter will go from the minimum distance between holds that are one hold apart to the maximum distance between holds that are two holds apart To our knowledge, nobody has successfully skipped three or more holds in speed climbing, so this is an appropriately wide prior. The first hold can never be skipped, because every climber is required to start on it. The Euclidean distance for the last hold will be the distance between the second-to-last (or third-to-last) hold and the buzzer. 
+In each timestep, each climber has a certain `innov_prob` probability of innovation. Innovations are changes to the beta of the route, in this case flipping one of the booleans of the `beta` vector from TRUE to FALSE. Not all boolean flips are possible. We will include a parameter `max_dist` that controls the maximum travel distance (Euclidean distance in meters) that a climber can travel after skipping a hold. To our knowledge, nobody has successfully skipped three or more holds in speed climbing, so an appropriate prior will be chosen to reflect this. The first hold can never be skipped, because every climber is required to start on it. The Euclidean distance for the last hold will be the distance between the second-to-last (or third-to-last) hold and the buzzer. 
 
 Below are the distributions of distances between holds that are one and two holds apart ...
 
@@ -89,10 +89,13 @@ grid <- read.csv("grid.csv")
 grid <- grid/1000
 
 #euclidean distance function
-euclidean <- function(x, skips){sqrt((grid$x[x+skips] - grid$x[x-skips])^2 + (grid$y[x+skips] - grid$y[x-skips])^2)}
+euclidean <- function(x, skips){
+  if(skips > 0){return(sqrt((grid$x[x+skips] - grid$x[x-skips])^2 + (grid$y[x+skips] - grid$y[x-skips])^2))}
+  if(skips == 0){return(sqrt((grid$x[x] - grid$x[x-1])^2 + (grid$y[x] - grid$y[x-1])^2))}
+}
 
 #get min and max distances for prior, and plot...
-min_dist <- min(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}))
+min_dist <- max(sapply(2:(nrow(grid)), function(x){euclidean(x, 0)}))
 max_dist <- max(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}))
 par(mar = c(4, 4, 1, 1))
 hist(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}), breaks = 10, main = "", xlab = "Distance (m)", xlim = c(0, 4))
@@ -184,7 +187,7 @@ years <- sort(unique(data$year))
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 ```
 
-Now let's run the model with an initial population size of `r n[1]`, a 0.2 probability of learning from the top 20 climbers, a 0.2 probability of innovation, `max_dist` = 2, and `constraint` = 1. The `improve_rate_m` of athletic improvement will be 2, the `improve_rate_sd` will be 0.2, and the `min` improvement possible will be 0.4. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
+Now let's run the model with an initial population size of `r n[1]`, a 0.2 probability of learning from the top 20 climbers, a 0.2 probability of innovation, and `max_dist` = 3. The `improve_rate_m` of athletic improvement will be 2, the `improve_rate_sd` will be 0.2, and the `min` improvement possible will be 0.4. `bw` and `ylim`, control the density bandwidth and y-axis limit in the plot, respectively. `sum_stats` controls whether summary statistics are calculated from the output, `plot` controls whether the output is plotted, and `bw` and `ylim` control the density bandwidth and y-axis limit of the plot, respectively.
 
 ```{r, fig.asp=0.6}
 #store starting time
@@ -193,7 +196,7 @@ start <- Sys.time()
 #run model
 output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
-                           innov_prob = 0.2, max_dist = 2, constraint = 1, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
+                           innov_prob = 0.2, max_dist = 3, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 
 #print run time
@@ -215,7 +218,7 @@ start <- Sys.time()
 #run model
 output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid,
                            n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
-                           innov_prob = 0.2, max_dist = 2, constraint = 1, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
+                           innov_prob = 0.2, max_dist = 3, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
                            learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 
