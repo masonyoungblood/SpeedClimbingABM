@@ -22,12 +22,17 @@ bounded_exp <- function(x, rate, min){
 
 #generate values
 x <- 1:12
-rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2.5, sd = 0.3)
-y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.07)})
+rates <- truncnorm::rtruncnorm(100, a = 1, mean = 4, sd = 0.5)
+y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.1)})
 
 #plot
 par(mar = c(4, 4, 1, 1))
 matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim = c(0, 1), col = scales::alpha("black", 0.2), lty = 1)
+```
+
+```{r echo=FALSE}
+#to inform lower bound of prior for improve_min
+#min(data$time[which(data$year == max(data$year))])/min(data$time[which(data$year == min(data$year))])
 ```
 
 In each timestep, a climbers current record comes from multiplying the time per handhold by this `athletic_improvement` index. After the first timestep, new climbers entering the population will have their distribution of `athletic_improvement` indices divided by the `athletic_improvement` value from the timestep that they enter. In this way, a climber who enters the population with a lower climbing time will follow the same general improvement trajectory as everyone else in the population.
@@ -95,13 +100,12 @@ euclidean <- function(x, skips){
 }
 
 #get min and max distances for prior, and plot...
-min_dist <- max(sapply(2:(nrow(grid)), function(x){euclidean(x, 0)}))
+min_dist <- min(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}))
 max_dist <- max(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}))
 par(mar = c(4, 4, 1, 1))
 hist(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}), breaks = 10, main = "", xlab = "Distance (m)", xlim = c(0, 4))
 hist(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}), breaks = 10, main = "", xlab = "Distance (m)", xlim = c(0, 4))
 ```
-
 
 Among the available holds within `max_dist`, the probability of innovating a hold will be weighted by the inverse of the distance between the adjacent holds, raised to the power of a parameter `constraint`. In other words, if skipping a hold means traversing a larger distance, then that hold will be less likely to be skipped. `constraint` controls the strength of this physical constraint.
 
