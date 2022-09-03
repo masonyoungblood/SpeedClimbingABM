@@ -157,7 +157,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
               euc_dists <- euc_dists[which(euc_dists <= max_dist)]
               
               #choose position to flip
-              beta_to_flip <- sample(ok_holds, 1, prob = (1/euc_dists)^constraint)
+              beta_to_flip <- sample(ok_holds, 1, prob = (1/rank(euc_dists))^constraint)
             }
             
             #get used hold below and above flipped beta for resampling times

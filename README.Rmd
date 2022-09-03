@@ -84,7 +84,7 @@ par(mar = c(4, 4, 1, 1))
 plot(to_plot$x, to_plot$y, type = "l", xlab = "Time (s)", ylab = "Hold #")
 ```
 
-In each timestep, each climber has a certain `innov_prob` probability of innovation. Innovations are changes to the beta of the route, in this case flipping one of the booleans of the `beta` vector from TRUE to FALSE. Not all boolean flips are possible. We will include a parameter `max_dist` that controls the maximum travel distance (Euclidean distance in meters) that a climber can travel after skipping a hold. To our knowledge, nobody has successfully skipped three or more holds in speed climbing, so an appropriate prior will be chosen to reflect this. The first hold can never be skipped, because every climber is required to start on it. The Euclidean distance for the last hold will be the distance between the second-to-last (or third-to-last) hold and the buzzer. 
+In each timestep, each climber has a certain `innov_prob` probability of innovation. Innovations are changes to the beta of the route, in this case flipping one of the booleans of the `beta` vector from TRUE to FALSE. Not all boolean flips are possible. We will include a parameter `max_dist` that controls the maximum travel distance (Euclidean distance in meters) that a climber can travel after skipping a hold. To our knowledge, nobody has successfully skipped three or more holds in speed climbing, so an appropriate prior will be chosen to reflect this. The first hold can never be skipped, because every climber is required to start on it. The Euclidean distance for the last hold will be the distance between the second-to-last (or third-to-last) hold and the buzzer.
 
 Below are the distributions of distances between holds that are one and two holds apart ...
 
@@ -107,7 +107,7 @@ hist(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}), breaks = 10, main =
 hist(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}), breaks = 10, main = "", xlab = "Distance (m)", xlim = c(0, 4))
 ```
 
-Among the available holds within `max_dist`, the probability of innovating a hold will be weighted by the inverse of the distance between the adjacent holds, raised to the power of a parameter `constraint`. In other words, if skipping a hold means traversing a larger distance, then that hold will be less likely to be skipped. `constraint` controls the strength of this physical constraint.
+Among the available holds within `max_dist`, the probability of innovating a hold will be weighted by the distance between the adjacent holds. Specifically, we will rank the possible holds to skip in ascending order by the distance between the adjacent holds, invert it, and raise it to the power of a parameter `constraint`. In other words, if skipping a hold means traversing a larger distance, then that hold will be less likely to be skipped.
 
 When a boolean flip occurs (i.e. when a hold is added to or dropped from the beta) the `seq_ratios` of the adjacent holds are resampled (based on the mean initial climbing times of the population), since the amount of time spent on the adjacent holds is dependent on the presence of the added/dropped hold. When each climber innovates, they compare the overall route time for their current beta with the innovated beta, and if the innovated beta is better then they overwrite their current beta. See `SpeedClimbingABM.R` for details.
 
