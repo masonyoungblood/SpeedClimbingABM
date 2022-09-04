@@ -22,8 +22,8 @@ bounded_exp <- function(x, rate, min){
 
 #generate values
 x <- 1:12
-rates <- truncnorm::rtruncnorm(100, a = 1, mean = 4, sd = 0.5)
-y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.1)})
+rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2, sd = 0.2)
+y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.4)})
 
 #plot
 par(mar = c(4, 4, 1, 1))
@@ -48,8 +48,21 @@ knitr::include_graphics("https://www.kindpng.com/picc/m/592-5929143_speed-climbi
 As you can see, the standardized speed wall has a total of 20 hand holds and 11 foot holds. Speed climbers often "smear" their feet on the wall or use hand holds for feet, so we will only be modeling the time spent on hand holds. Each climber will be initialized with a vector of their beta, or a TRUE/FALSE for whether they use each hand hold in the route, along with a vector of sequence ratios. The sequence ratios will be drawn from a truncated normal distribution with a lower bound at 0, a mean of 1, and a standard deviation parameter that controls the initial variation in times across holds. The actual amount of time spent on each hold, then, will be these sequence ratios multiplied by an initial reference climbing time per hold (initially their starting climbing time divided by the number of holds). For now the beta vectors will start out as all TRUE, so that all climbers start out using every hold in the route. Here is an example of how the beta and sequence ratio vectors are initialized.
 
 ```{r}
+#read in grid of holds and convert to meters
+grid <- read.csv("grid.csv")
+grid <- grid/1000
+
+#euclidean distance function
+euclidean <- function(x, skips){
+  if(skips > 0){return(sqrt((grid$x[x+skips] - grid$x[x-skips])^2 + (grid$y[x+skips] - grid$y[x-skips])^2))}
+  if(skips == 0){return(sqrt((grid$x[x] - grid$x[x-1])^2 + (grid$y[x] - grid$y[x-1])^2))}
+}
+
 #set number of holds
 n_holds <- 20
+
+#get distances between holds
+dists <- sapply(1:n_holds, function(x){euclidean(x+1, 0)})
 
 #set initial mean speed
 init_time <- 18
@@ -65,6 +78,9 @@ beta <- sample(c(TRUE, FALSE), n_holds, prob = c(beta_true_prob, 1-beta_true_pro
 
 #initialize sequence ratios
 seq_ratios <- truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier)
+
+#sort sequence ratios to match the distance order of the climbing holds
+seq_ratios <- sort(seq_ratios)[rank(dists, ties.method = "first")]
 
 #print the beta and climbing time vectors
 beta
@@ -89,16 +105,6 @@ In each timestep, each climber has a certain `innov_prob` probability of innovat
 Below are the distributions of distances between holds that are one and two holds apart ...
 
 ```{r, echo=FALSE, fig.asp=0.4}
-#read in grid of holds and convert to meters
-grid <- read.csv("grid.csv")
-grid <- grid/1000
-
-#euclidean distance function
-euclidean <- function(x, skips){
-  if(skips > 0){return(sqrt((grid$x[x+skips] - grid$x[x-skips])^2 + (grid$y[x+skips] - grid$y[x-skips])^2))}
-  if(skips == 0){return(sqrt((grid$x[x] - grid$x[x-1])^2 + (grid$y[x] - grid$y[x-1])^2))}
-}
-
 #get min and max distances for prior, and plot...
 min_dist <- min(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}))
 max_dist <- max(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}))
@@ -212,25 +218,3 @@ In the above plot, each distribution (from right to left) is the distribution of
 ```{r}
 output
 ```
-
-Let's do another run of the model, but let's add interaction effects so that climbers with slower times are more likely to learn (`learn_x_times` = 1), climbers with faster times are more likely to innovate (`innov_x_times` = -1), and both learning and innovation become more common as population size increases (`learn_x_pop` and `innov_x_pop` = 1).
-
-```{r, fig.asp=0.6}
-#store starting time
-start <- Sys.time()
-
-#run model
-output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
-                           innov_prob = 0.2, max_dist = 3, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
-                           learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
-                           sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
-
-#print run time
-Sys.time() - start
-```
-
-```{r}
-output
-```
-

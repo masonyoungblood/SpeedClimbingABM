@@ -25,7 +25,7 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # improve_min <- 0.8
 # sd_multiplier <- 0.5
 # sum_stats <- TRUE
-# plot <- FALSE
+# plot <- TRUE
 # bw <- 1
 # ylim <- 0.3
 # quant_by <- 0.2
@@ -43,6 +43,9 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   #colors for plotting after each timepoint
   colors <- rainbow((length(n)-1)*1.25) #times 1.2 so it doesn't loop back around
   
+  #get distances between each hold from grids object
+  dists <- sapply(1:n_holds, function(x){sqrt((grid$x[x+1] - grid$x[x])^2 + (grid$y[x+1] - grid$y[x])^2)})
+
   #get booleans for whether learning and innovation needs to be individually calculated, and scale and center population size
   learn_bool <- learn_x_times > 0 | learn_x_pop > 0
   innov_bool <- innov_x_times > 0 | innov_x_pop > 0
@@ -55,7 +58,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   climbers <- data.table::data.table(ID = pop_data$ID[which(pop_data$start == years[1])],
                                      ref_times = pop_data$time[which(pop_data$start == years[1])]/sum(beta),
                                      beta = lapply(1:n[1], function(x){beta}),
-                                     seq_ratios = lapply(1:n[1], function(x){truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier)}),
+                                     seq_ratios = lapply(1:n[1], function(x){sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")]}),
                                      ath_imp = lapply(1:n[1], function(x){bounded_exp(1:length(n), truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd), improve_min)}),
                                      current_record = pop_data$time[which(pop_data$start == years[1])])
   
@@ -169,8 +172,8 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
             beta_a[beta_to_flip] <- FALSE
             
             #resample adjacent seq_ratios
-            seq_ratios_a[lower_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
-            seq_ratios_a[upper_adj] <- truncnorm::rtruncnorm(1, a = 0, mean = 1, sd = sd_multiplier)
+            seq_ratios_a[lower_adj] <- sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")][lower_adj]
+            if(upper_adj < n_holds+1){seq_ratios_a[upper_adj] <- sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")][upper_adj]}
             
             #overwrite current
             climbers$beta[[j]] <- beta_a

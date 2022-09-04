@@ -28,8 +28,8 @@ bounded_exp <- function(x, rate, min){
 
 #generate values
 x <- 1:12
-rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2.5, sd = 0.3)
-y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.07)})
+rates <- truncnorm::rtruncnorm(100, a = 1, mean = 2, sd = 0.2)
+y <- sapply(1:length(rates), function(h){bounded_exp(x, rates[h], 0.4)})
 
 #plot
 par(mar = c(4, 4, 1, 1))
@@ -72,8 +72,21 @@ route. Here is an example of how the beta and sequence ratio vectors are
 initialized.
 
 ``` r
+#read in grid of holds and convert to meters
+grid <- read.csv("grid.csv")
+grid <- grid/1000
+
+#euclidean distance function
+euclidean <- function(x, skips){
+  if(skips > 0){return(sqrt((grid$x[x+skips] - grid$x[x-skips])^2 + (grid$y[x+skips] - grid$y[x-skips])^2))}
+  if(skips == 0){return(sqrt((grid$x[x] - grid$x[x-1])^2 + (grid$y[x] - grid$y[x-1])^2))}
+}
+
 #set number of holds
 n_holds <- 20
+
+#get distances between holds
+dists <- sapply(1:n_holds, function(x){euclidean(x+1, 0)})
 
 #set initial mean speed
 init_time <- 18
@@ -90,6 +103,9 @@ beta <- sample(c(TRUE, FALSE), n_holds, prob = c(beta_true_prob, 1-beta_true_pro
 #initialize sequence ratios
 seq_ratios <- truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier)
 
+#sort sequence ratios to match the distance order of the climbing holds
+seq_ratios <- sort(seq_ratios)[rank(dists, ties.method = "first")]
+
 #print the beta and climbing time vectors
 beta
 ```
@@ -101,9 +117,9 @@ beta
 (init_time/n_holds)*seq_ratios
 ```
 
-    ##  [1] 0.5402343 0.6789109 0.4964314 1.0620359 1.2347013 0.4931091 0.7653665
-    ##  [8] 1.2116549 1.2807281 0.9497233 0.9663621 0.4525588 0.7873491 1.3997985
-    ## [15] 1.5644431 1.5156442 0.5278641 0.6988377 1.2347530 0.7614113
+    ##  [1] 0.2510695 0.9861053 1.1043605 0.9091305 0.5400233 0.8781832 0.9485455
+    ##  [8] 0.7096227 1.2019516 0.6800613 0.4753352 1.0570214 0.8045630 0.5821169
+    ## [15] 0.3413088 0.9278757 1.2436039 0.8361275 0.8891036 1.4523676
 
 This `sd_multiplier` value of 0.5 generates a distribution of times per
 hold that is similar to the example distribution in [Reveret et
@@ -118,7 +134,7 @@ value of 0.33 may be more appropriate [(Pandurevic et al.,
 analyses the posterior for this parameter converged to 0.5. We will make
 a simplifying assumption and use 0.5 for all of our simulations.
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 In each timestep, each climber has a certain `innov_prob` probability of
 innovation. Innovations are changes to the beta of the route, in this
@@ -136,14 +152,15 @@ buzzer.
 Below are the distributions of distances between holds that are one and
 two holds apart …
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
 
 Among the available holds within `max_dist`, the probability of
-innovating a hold will be weighted by the inverse of the distance
-between the adjacent holds, raised to the power of a parameter
-`constraint`. In other words, if skipping a hold means traversing a
-larger distance, then that hold will be less likely to be skipped.
-`constraint` controls the strength of this physical constraint.
+innovating a hold will be weighted by the distance between the adjacent
+holds. Specifically, we will rank the possible holds to skip in
+ascending order by the distance between the adjacent holds, invert it,
+and raise it to the power of a parameter `constraint`. In other words,
+if skipping a hold means traversing a larger distance, then that hold
+will be less likely to be skipped.
 
 When a boolean flip occurs (i.e. when a hold is added to or dropped from
 the beta) the `seq_ratios` of the adjacent holds are resampled (based on
@@ -197,7 +214,7 @@ from there. Climbers who only appear in the dataset once be initialized
 with their current record in the year they appear and will disappear in
 the next year with no simulated improvement (see below).
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 To do this, let’s create a new `pop_data` object that includes all of
 the information we need. Each row corresponds to a continuous sequence
@@ -300,14 +317,14 @@ output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = gri
                            sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 #print run time
 Sys.time() - start
 ```
 
-    ## Time difference of 0.1857071 secs
+    ## Time difference of 0.3316419 secs
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
@@ -320,90 +337,29 @@ output
 
     ##              0%       10%       20%       30%       40%       50%       60%
     ##  [1,] 15.400000 18.256000 20.408000 21.188000 24.432000 28.640000 29.712000
-    ##  [2,]  8.080000 11.060578 12.480000 14.325166 16.502488 20.630061 25.160000
-    ##  [3,]  5.873632  8.553420  9.625093  9.960251 11.880000 12.863145 14.928484
-    ##  [4,]  5.095643  7.295000  8.480000  9.130000  9.880000 11.387495 12.690000
-    ##  [5,]  4.727489  6.825000  7.245531  7.565026  8.013432  8.538026  9.025170
-    ##  [6,]  4.553275  6.139634  6.744713  7.136155  7.520000  7.822596  8.610000
-    ##  [7,]  5.233254  6.283860  6.663972  6.967295  7.278000  7.714898  8.549689
-    ##  [8,]  4.920689  5.878935  6.449913  6.914005  7.328236  7.741000  8.554000
-    ##  [9,]  5.131003  5.636271  6.231486  6.606955  6.771877  7.140782  7.766057
-    ## [10,]  3.838108  5.426614  6.397104  6.622725  7.021380  7.595000  7.844000
-    ## [11,]  3.835740  5.151451  5.846159  6.411400  6.779071  7.364068  8.013531
-    ## [12,]  3.395694  5.117541  6.044764  6.568138  7.062204  7.580000  8.087829
-    ## [13,]  3.392146  4.904438  5.602594  6.121893  6.446190  7.044515  7.606281
-    ##             70%       80%      90%     100%
-    ##  [1,] 32.472000 39.548000 43.25400 62.06000
-    ##  [2,] 28.910900 30.598000 33.13300 48.08000
-    ##  [3,] 18.090819 23.514749 25.52600 37.27870
-    ##  [4,] 15.928443 21.710000 23.71747 32.13086
-    ##  [5,] 10.594735 14.045370 18.20053 21.33770
-    ##  [6,] 10.018308 11.530000 15.50409 19.42049
-    ##  [7,] 10.784468 13.546000 16.84816 24.79000
-    ##  [8,]  8.996000  9.910262 11.86200 23.29611
-    ##  [9,]  8.324000  8.948976 11.26200 18.15000
-    ## [10,]  8.604000 10.018000 12.14685 23.37000
-    ## [11,]  8.703000  9.580000 10.88729 16.59000
-    ## [12,]  8.731958  9.239800 10.51600 19.83000
-    ## [13,]  8.044284  8.721119 10.05680 15.37488
-
-Let’s do another run of the model, but let’s add interaction effects so
-that climbers with slower times are more likely to learn
-(`learn_x_times` = 1), climbers with faster times are more likely to
-innovate (`innov_x_times` = -1), and both learning and innovation become
-more common as population size increases (`learn_x_pop` and
-`innov_x_pop` = 1).
-
-``` r
-#store starting time
-start <- Sys.time()
-
-#run model
-output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid,
-                           n_holds = 20, beta_true_prob = 1, learn_prob = 0.2, n_top = 20,
-                           innov_prob = 0.2, max_dist = 3, improve_rate_m = 2, improve_rate_sd = 0.2, improve_min = 0.4,
-                           learn_x_times = 1, innov_x_times = -1, learn_x_pop = 1, innov_x_pop = 1,
-                           sum_stats = TRUE, plot = TRUE, bw = 0.6, ylim = 0.4)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
-
-``` r
-#print run time
-Sys.time() - start
-```
-
-    ## Time difference of 0.1958089 secs
-
-``` r
-output
-```
-
-    ##              0%       10%       20%       30%       40%       50%       60%
-    ##  [1,] 15.400000 18.256000 20.408000 21.188000 24.432000 28.640000 29.712000
-    ##  [2,]  8.080000 11.371797 12.396273 13.146000 16.285188 21.426463 25.160000
-    ##  [3,]  5.057947  8.244684  9.150539 10.828557 11.427527 12.659246 15.003114
-    ##  [4,]  5.828766  7.525000  8.480000  9.045000 10.260000 11.250242 12.410000
-    ##  [5,]  5.447661  6.742993  7.100000  7.623333  8.094889  8.560000  9.433370
-    ##  [6,]  4.854973  6.044089  6.507064  7.167482  7.285589  7.990537  8.829000
-    ##  [7,]  4.181177  6.122759  6.608784  7.141207  7.443462  8.005218  8.874561
-    ##  [8,]  3.771361  5.987855  6.526619  7.009883  7.561200  7.758000  8.392135
-    ##  [9,]  3.755358  4.984049  5.789546  6.369965  6.909726  7.578298  8.092000
-    ## [10,]  3.305044  4.987536  6.135821  6.605000  7.041863  7.605000  7.844000
-    ## [11,]  3.301864  4.558548  5.533536  6.186487  6.666000  7.230000  7.667998
-    ## [12,]  3.202550  4.304976  5.297955  6.345200  6.680000  7.310000  7.824000
-    ## [13,]  2.858689  4.061392  4.402452  4.776138  5.540486  5.949355  6.457855
-    ##             70%       80%      90%     100%
-    ##  [1,] 32.472000 39.548000 43.25400 62.06000
-    ##  [2,] 28.862000 31.218000 33.21137 48.08000
-    ##  [3,] 19.657361 20.773782 25.52600 33.23000
-    ##  [4,] 14.160462 20.530000 23.69500 31.90000
-    ##  [5,] 10.355714 12.701513 16.17691 20.78870
-    ##  [6,]  9.628367 11.464175 12.86647 17.77753
-    ##  [7,] 10.101761 13.022122 16.49700 24.79000
-    ##  [8,]  8.933532  9.498400 11.79280 16.52000
-    ##  [9,]  8.439339  8.780140 10.28200 18.15000
-    ## [10,]  8.426560  9.930000 11.82700 23.37000
-    ## [11,]  8.410722  9.270923 10.01272 16.59000
-    ## [12,]  8.458400  9.168880 10.25600 19.83000
-    ## [13,]  7.378863  8.122696  9.33540 13.30600
+    ##  [2,]  8.080000 10.753423 12.587204 14.207000 16.559999 20.284150 25.138614
+    ##  [3,]  4.996583  7.194799  9.030932  9.952271 11.880000 13.065941 14.024687
+    ##  [4,]  4.315341  7.295000  8.020000  8.890000  9.690000 11.034524 12.370000
+    ##  [5,]  3.974841  6.071649  6.880000  7.225000  7.532795  8.434367  8.665037
+    ##  [6,]  3.804652  5.501821  6.161151  6.993560  7.262000  7.830641  8.829000
+    ##  [7,]  4.188695  5.256774  6.077792  6.850743  7.198000  7.660000  8.348520
+    ##  [8,]  4.144488  5.228664  5.842888  6.484375  7.065868  7.700000  8.120000
+    ##  [9,]  4.524479  4.917008  5.326554  5.888223  6.198433  6.670000  7.606000
+    ## [10,]  4.547437  5.063606  5.786508  6.482000  6.876000  7.595000  7.844000
+    ## [11,]  4.543097  5.102602  5.663103  6.102708  6.518811  7.186863  7.732656
+    ## [12,]  4.084394  5.179509  5.925093  6.500400  6.915210  7.580000  7.966000
+    ## [13,]  4.080630  5.016933  5.637728  6.095874  6.476762  6.902443  7.371889
+    ##             70%      80%       90%     100%
+    ##  [1,] 32.472000 39.54800 43.254000 62.06000
+    ##  [2,] 28.862000 30.94642 33.133000 48.08000
+    ##  [3,] 15.785179 24.60375 25.299845 33.23000
+    ##  [4,] 14.985076 21.57000 23.695000 31.90000
+    ##  [5,] 10.089648 13.18874 18.175221 21.69333
+    ##  [6,]  9.524354 10.89000 13.399911 20.89827
+    ##  [7,]  9.596461 13.48200 16.519078 24.79000
+    ##  [8,]  8.812952  9.40300 11.792800 18.42670
+    ##  [9,]  8.324000  8.76034 10.603648 18.15000
+    ## [10,]  8.604000 10.05378 12.051000 23.37000
+    ## [11,]  8.558000  9.54400 10.897103 16.59000
+    ## [12,]  8.727948  9.23980 10.444000 19.83000
+    ## [13,]  7.968400  8.60480  9.800413 13.30600
