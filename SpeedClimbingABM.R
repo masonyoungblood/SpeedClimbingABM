@@ -172,8 +172,8 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
             beta_a[beta_to_flip] <- FALSE
             
             #resample adjacent seq_ratios
-            seq_ratios_a[lower_adj] <- sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")][lower_adj]
-            if(upper_adj < n_holds+1){seq_ratios_a[upper_adj] <- sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")][upper_adj]}
+            #seq_ratios_a[lower_adj] <- sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")][lower_adj]
+            #if(upper_adj < n_holds+1){seq_ratios_a[upper_adj] <- sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")][upper_adj]}
             
             #overwrite current
             climbers$beta[[j]] <- beta_a

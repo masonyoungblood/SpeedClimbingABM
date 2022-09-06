@@ -9,9 +9,6 @@ euclidean <- function(obs_stats, sum_stats){
   return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))*(x/length(obs_stats))})))
 }
 
-#random seed
-set.seed(12345)
-
 #subset data by gender
 data <- data[which(data$gender == "M"), ]
 
@@ -53,10 +50,10 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 10000
+n_sim <- 1000
 
 #tolerance level per round
-tol <- 0.1
+tol <- 0.5
 
 #number of rounds
 rounds <- 500
@@ -65,15 +62,15 @@ for(i in 1:rounds){
   if(i == 1){
     #set priors
     priors <- data.frame(innov_prob = runif(n_sim, 0, 1),
-                         innov_x_times = rnorm(n_sim, 0, 0.5), 
-                         innov_x_pop = rnorm(n_sim, 0, 0.5), 
+                         innov_x_times = runif(n_sim, -0.5, 0.5),
+                         innov_x_pop = runif(n_sim, -0.5, 0.5),
                          learn_prob = runif(n_sim, 0, 1),
-                         learn_x_times = rnorm(n_sim, 0, 0.5),
-                         learn_x_pop = rnorm(n_sim, 0, 0.5),
+                         learn_x_times = runif(n_sim, -0.5, 0.5),
+                         learn_x_pop = runif(n_sim, -0.5, 0.5),
                          n_top = runif(n_sim, 1, 34),
                          max_dist = runif(n_sim, 0.7905694, 3.482097),
                          constraint = runif(n_sim, 0, 2),
-                         improve_rate_m = runif(n_sim, 0, 4),
+                         improve_rate_m = runif(n_sim, 1, 4),
                          improve_rate_sd = runif(n_sim, 0, 0.2),
                          improve_min = runif(n_sim, 0.3564935, 1))
   } else{
@@ -81,18 +78,18 @@ for(i in 1:rounds){
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
     #get posteriors for each parameter for prior sampling
-    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob), to = max(params$innov_prob))
-    innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_times), to = max(params$innov_x_times))
-    innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_pop), to = max(params$innov_x_pop))
-    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob), to = max(params$learn_prob))
-    learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_times), to = max(params$learn_x_times))
-    learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_pop), to = max(params$learn_x_pop))
-    n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top), to = max(params$n_top))
-    max_dist_post <- density(params$max_dist[order(results)[1:(n_sim*tol)]], from = min(params$max_dist), to = max(params$max_dist))
-    constraint_post <- density(params$constraint[order(results)[1:(n_sim*tol)]], from = min(params$constraint), to = max(params$constraint))
-    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m))
-    improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd), to = max(params$improve_rate_sd))
-    improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min), to = max(params$improve_min))
+    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob), to = max(params$innov_prob), bw = "SJ", kernel = "gaussian")
+    innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_times), to = max(params$innov_x_times), bw = "SJ", kernel = "gaussian")
+    innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_pop), to = max(params$innov_x_pop), bw = "SJ", kernel = "gaussian")
+    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob), to = max(params$learn_prob), bw = "SJ", kernel = "gaussian")
+    learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_times), to = max(params$learn_x_times), bw = "SJ", kernel = "gaussian")
+    learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_pop), to = max(params$learn_x_pop), bw = "SJ", kernel = "gaussian")
+    n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top), to = max(params$n_top), bw = "SJ", kernel = "gaussian")
+    max_dist_post <- density(params$max_dist[order(results)[1:(n_sim*tol)]], from = min(params$max_dist), to = max(params$max_dist), bw = "SJ", kernel = "gaussian")
+    constraint_post <- density(params$constraint[order(results)[1:(n_sim*tol)]], from = min(params$constraint), to = max(params$constraint), bw = "SJ", kernel = "gaussian")
+    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m), bw = "SJ", kernel = "gaussian")
+    improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd), to = max(params$improve_rate_sd), bw = "SJ", kernel = "gaussian")
+    improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min), to = max(params$improve_min), bw = "SJ", kernel = "gaussian")
     
     rm(list = c("params", "results"))
     
