@@ -68,11 +68,11 @@ for(i in 1:rounds){
                          learn_x_times = runif(n_sim, -0.5, 0.5),
                          learn_x_pop = runif(n_sim, -0.5, 0.5),
                          n_top = runif(n_sim, 1, 34),
-                         max_dist = runif(n_sim, 0.7905694, 3.482097),
+                         max_dist = runif(n_sim, 1.520691, 3.482097),
                          constraint = runif(n_sim, 0, 2),
                          improve_rate_m = runif(n_sim, 1, 4),
                          improve_rate_sd = runif(n_sim, 0, 0.2),
-                         improve_min = runif(n_sim, 0.3564935, 1))
+                         improve_min = runif(n_sim, 0.3564935, 0.5092764))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))

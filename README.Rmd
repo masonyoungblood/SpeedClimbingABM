@@ -33,6 +33,12 @@ matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim
 ```{r echo=FALSE}
 #to inform lower bound of prior for improve_min
 #min(data$time[which(data$year == max(data$year))])/min(data$time[which(data$year == min(data$year))])
+
+#to inform upper bound of prior for improve_min
+#M: 2007 record is 15.4, 2019 record is 5.49 (Qixin Zhong, World Cup, Xiamen) [6 skipped]
+#W: 2007 record is 23.01, 2019 record is 7.1 (Yiling Song, World Cup, Chongqing) [5 skipped]
+#(5.49/14)/(15.4/20)
+#(7.1/15)/(23.01/20)
 ```
 
 In each timestep, a climbers current record comes from multiplying the time per handhold by this `athletic_improvement` index. After the first timestep, new climbers entering the population will have their distribution of `athletic_improvement` indices divided by the `athletic_improvement` value from the timestep that they enter. In this way, a climber who enters the population with a lower climbing time will follow the same general improvement trajectory as everyone else in the population.
@@ -106,7 +112,7 @@ Below are the distributions of distances between holds that are one and two hold
 
 ```{r, echo=FALSE, fig.asp=0.4}
 #get min and max distances for prior, and plot...
-min_dist <- min(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}))
+min_dist <- max(sapply(1:n_holds, function(x){euclidean(x+1, 0)}))
 max_dist <- max(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}))
 par(mar = c(4, 4, 1, 1))
 hist(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}), breaks = 10, main = "", xlab = "Distance (m)", xlim = c(0, 4))
