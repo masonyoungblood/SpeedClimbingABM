@@ -37,12 +37,12 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, max_dist, constraint, improve_rate_m, improve_rate_sd, improve_min){
+SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, max_dist, constraint, improve_rate_m, improve_rate_sd){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, 
                            n_top = n_top, max_dist = max_dist, constraint = constraint,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, 
-                           improve_min = improve_min, sum_stats = FALSE, plot = FALSE)
+                           improve_min = 0.5, sum_stats = FALSE, plot = FALSE)
   euclidean(obs_stats, temp)
 }
 
@@ -50,7 +50,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 1000
+n_sim <- 2000
 
 #tolerance level per round
 tol <- 0.5
@@ -61,7 +61,7 @@ rounds <- 500
 for(i in 1:rounds){
   if(i == 1){
     #set priors
-    priors <- data.frame(innov_prob = runif(n_sim, 0, 1),
+    priors <- data.frame(innov_prob = runif(n_sim, 0, 0.5),
                          innov_x_times = runif(n_sim, -0.5, 0.5),
                          innov_x_pop = runif(n_sim, -0.5, 0.5),
                          learn_prob = runif(n_sim, 0, 1),
@@ -69,10 +69,9 @@ for(i in 1:rounds){
                          learn_x_pop = runif(n_sim, -0.5, 0.5),
                          n_top = runif(n_sim, 1, 28),
                          max_dist = runif(n_sim, 1.520691, 3.482097),
-                         constraint = runif(n_sim, 0, 2),
+                         constraint = runif(n_sim, 0, 4),
                          improve_rate_m = runif(n_sim, 1, 4),
-                         improve_rate_sd = runif(n_sim, 0, 0.2),
-                         improve_min = runif(n_sim, 0.3085615, 0.4114153))
+                         improve_rate_sd = runif(n_sim, 0, 0.5))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
@@ -89,8 +88,7 @@ for(i in 1:rounds){
     constraint_post <- density(params$constraint[order(results)[1:(n_sim*tol)]], from = min(params$constraint), to = max(params$constraint), bw = "SJ", kernel = "gaussian")
     improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m), bw = "SJ", kernel = "gaussian")
     improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd), to = max(params$improve_rate_sd), bw = "SJ", kernel = "gaussian")
-    improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min), to = max(params$improve_min), bw = "SJ", kernel = "gaussian")
-    
+
     rm(list = c("params", "results"))
     
     #set new priors by sampling from posteriors
@@ -104,13 +102,12 @@ for(i in 1:rounds){
                          max_dist = sample(max_dist_post$x, n_sim, replace = TRUE, prob = max_dist_post$y),
                          constraint = sample(constraint_post$x, n_sim, replace = TRUE, prob = constraint_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
-                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y),
-                         improve_min = sample(improve_min_post$x, n_sim, replace = TRUE, prob = improve_min_post$y))
+                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
     
     rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post",
                 "learn_prob_post", "learn_x_times_post", "learn_x_pop_post",
                 "n_top_post", "max_dist_post", "constraint",
-                "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
+                "improve_rate_m_post", "improve_rate_sd_post"))
   }
   
   #run simulations
