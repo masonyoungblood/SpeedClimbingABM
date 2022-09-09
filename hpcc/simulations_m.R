@@ -42,7 +42,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, 
                            n_top = n_top, max_dist = max_dist, constraint = constraint,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, 
-                           improve_min = 0.5, sum_stats = FALSE, plot = FALSE)
+                           improve_min = 0.5092764, sum_stats = FALSE, plot = FALSE)
   euclidean(obs_stats, temp)
 }
 

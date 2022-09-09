@@ -35,8 +35,8 @@ matplot(x, y, type = "l", xlab = "Timestep", ylab = "Athletic Improvement", ylim
 #min(data$time[which(data$year == max(data$year))])/min(data$time[which(data$year == min(data$year))])
 
 #to inform upper bound of prior for improve_min
-#M: 2007 record is 15.4, 2019 record is 5.49 (Qixin Zhong, World Cup, Xiamen) [6 skipped]
-#W: 2007 record is 23.01, 2019 record is 7.1 (Yiling Song, World Cup, Chongqing) [5 skipped]
+#M: 2007 record is 15.4, 2019 record is 5.49 (Qixin Zhong, World Cup, Xiamen, https://youtu.be/pJKVOWApsEU?t=1616) [6 skipped]
+#W: 2007 record is 23.01, 2019 record is 7.1 (Yiling Song, World Cup, Chongqing, https://youtu.be/lBf2lp7OxnY?t=2333) [5 skipped]
 #(5.49/14)/(15.4/20)
 #(7.1/15)/(23.01/20)
 ```
