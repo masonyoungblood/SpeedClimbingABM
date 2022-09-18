@@ -117,9 +117,9 @@ beta
 (init_time/n_holds)*seq_ratios
 ```
 
-    ##  [1] 0.1578364 1.1757189 1.3990093 1.1000627 0.4989064 0.9173631 1.1655860
-    ##  [8] 0.6282757 1.4893744 0.6199392 0.3334945 1.1853529 0.7466658 0.5577448
-    ## [15] 0.2737298 1.1294678 1.9106195 0.8887322 1.0085892 2.0933238
+    ##  [1] 0.1701498 1.1669407 1.3680521 1.0849181 0.5564661 1.0250596 1.1432280
+    ##  [8] 0.8199482 1.6416732 0.7779875 0.5224821 1.2533509 0.9730208 0.6611103
+    ## [15] 0.5133756 1.0901116 1.6430841 1.0126206 1.0764285 1.8622821
 
 This `sd_multiplier` value of 0.5 generates a distribution of times per
 hold that is similar to the example distribution in [Reveret et
@@ -155,21 +155,23 @@ two holds apart …
 ![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
 
 Among the available holds within `max_dist`, the probability of
-innovating a hold will be weighted by the distance between the adjacent
-holds. Specifically, we will rank the possible holds to skip in
-ascending order by the distance between the adjacent holds, invert it,
-and raise it to the power of a parameter `constraint`. In other words,
-if skipping a hold means traversing a larger distance, then that hold
-will be less likely to be skipped.
+innovating a hold will be based on two things: (1) the distance between
+the adjacent holds, and (2) the ratio between the original path distance
+and the new path distance. The first of these reflects a preference for
+skipping holds that lead to smaller gaps in the route, and the second
+reflects a preference for skipping holds that make the path more direct.
+For both measures, we will rank the possible holds to skip in ascending
+order by the distance (*R*<sub>*d**i**s**t*</sub>) and path ratio
+(*R*<sub>*r**a**t**i**o*</sub>), invert them, and raise them to the
+power of parameters `constraint_a` and `constraint_b`. So, the random
+sampling of holds to skip will be weighted by the following:
 
-When a boolean flip occurs (i.e. when a hold is added to or dropped from
-the beta) the `seq_ratios` of the adjacent holds are resampled (based on
-the mean initial climbing times of the population), since the amount of
-time spent on the adjacent holds is dependent on the presence of the
-added/dropped hold. When each climber innovates, they compare the
-overall route time for their current beta with the innovated beta, and
-if the innovated beta is better then they overwrite their current beta.
-See `SpeedClimbingABM.R` for details.
+(1/*R*<sub>*d**i**s**t*</sub>)<sup>*c**o**n**s**t**r**a**i**n**t*<sub>*a*</sub></sup> \* (1/*R*<sub>*r**a**t**i**o*</sub>)<sup>*c**o**n**s**t**r**a**i**n**t*<sub>*b*</sub></sup>
+
+In other words, if skipping a hold means traversing a shorter and more
+direct distance, then that hold will be more likely to be skipped.
+
+See `SpeedClimbingABM.R` for more details.
 
 ## Social Learning
 
@@ -324,7 +326,7 @@ output <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = gri
 Sys.time() - start
 ```
 
-    ## Time difference of 0.2135961 secs
+    ## Time difference of 0.3331311 secs
 
 In the above plot, each distribution (from right to left) is the
 distribution of `current_records` for climbers in the population in each
@@ -337,29 +339,29 @@ output
 
     ##              0%       10%       20%       30%       40%       50%       60%
     ##  [1,] 15.400000 18.256000 20.408000 21.188000 24.432000 28.640000 29.712000
-    ##  [2,]  8.080000 11.238939 12.669751 13.990689 16.452564 20.388528 25.160000
-    ##  [3,]  5.819219  7.300842  9.272361 10.504454 11.156461 12.500611 15.249844
-    ##  [4,]  4.806618  7.330000  8.480000  9.079843  9.880000 11.505000 12.550329
-    ##  [5,]  4.406939  6.713934  7.211760  7.508967  7.980000  8.520000  9.195742
-    ##  [6,]  4.199910  6.118220  6.524288  7.113711  7.262000  7.845867  8.610000
-    ##  [7,]  5.102482  6.143769  6.722591  7.036545  7.250019  7.660000  8.526000
-    ##  [8,]  5.041873  5.687699  6.430000  6.915658  7.182665  7.700000  8.149460
-    ##  [9,]  4.944646  5.654298  6.145793  6.621117  6.951587  7.362807  7.954000
-    ## [10,]  4.584891  5.711984  6.429074  6.671201  7.136912  7.625000  7.996626
-    ## [11,]  4.523508  5.697844  6.131082  6.681000  7.035228  7.458287  8.094000
-    ## [12,]  4.220585  5.948076  6.485688  6.840400  7.283394  7.758720  8.199200
-    ## [13,]  4.174042  5.559892  6.025713  6.503891  7.074136  7.518823  8.005200
+    ##  [2,]  8.080000 11.552000 13.031275 14.358661 16.848000 21.910000 25.317694
+    ##  [3,]  5.815219  7.951326 10.298679 11.078051 11.654987 12.923353 15.385168
+    ##  [4,]  5.023086  7.570127  8.780000  9.265000 10.139731 11.341157 12.410000
+    ##  [5,]  4.627948  6.781499  7.228239  7.705525  8.043144  8.560000  9.201756
+    ##  [6,]  4.430842  6.094815  6.437015  7.258000  7.760000  8.601718  9.274192
+    ##  [7,]  5.385945  5.950849  6.602542  6.987448  7.278000  7.767843  8.780000
+    ##  [8,]  4.965576  5.858203  6.430000  6.901401  7.447738  7.741000  8.574531
+    ##  [9,]  5.036102  5.803397  6.183595  6.560000  6.995348  7.275538  7.904000
+    ## [10,]  4.730695  5.777305  6.356000  6.692000  7.230000  7.640000  7.950000
+    ## [11,]  4.392764  5.766372  6.260839  6.666004  7.142989  7.509785  8.169851
+    ## [12,]  4.390699  5.880299  6.379534  6.711798  7.292777  7.703175  8.208600
+    ## [13,]  4.389716  5.636350  6.035376  6.340600  6.851835  7.377000  7.971200
     ##             70%       80%      90%     100%
     ##  [1,] 32.472000 39.548000 43.25400 62.06000
-    ##  [2,] 28.563878 30.598000 33.13300 48.08000
-    ##  [3,] 17.758532 21.464739 25.52600 34.27877
-    ##  [4,] 16.842980 21.570000 23.69500 31.90000
-    ##  [5,] 10.734836 14.467456 18.09324 21.01397
-    ##  [6,]  9.667624 11.530000 14.50411 18.38490
-    ##  [7,] 10.083400 13.482000 17.26600 24.79000
-    ##  [8,]  8.974000  9.498400 11.81320 22.68466
-    ##  [9,]  8.324000  9.104328 11.26200 18.15000
-    ## [10,]  8.484000 10.018000 12.05100 23.37000
-    ## [11,]  8.794094  9.640000 11.21261 17.47735
-    ## [12,]  8.874064  9.380303 10.51600 19.83000
-    ## [13,]  8.584941  9.149064 10.20161 15.03341
+    ##  [2,] 28.870972 30.598000 33.13300 48.08000
+    ##  [3,] 17.345452 21.618489 26.82344 33.23000
+    ##  [4,] 17.156926 21.570000 24.21684 31.90000
+    ##  [5,] 11.028188 15.117621 18.54316 25.32337
+    ##  [6,] 10.025129 12.569234 15.68238 18.31486
+    ##  [7,] 11.015397 13.546000 17.25354 24.79000
+    ##  [8,]  9.026400  9.659474 11.86200 24.15104
+    ##  [9,]  8.324000  8.878000 11.16304 18.15000
+    ## [10,]  8.502694 10.018000 12.05100 23.37000
+    ## [11,]  8.703000  9.782000 11.03673 16.68508
+    ## [12,]  8.878000  9.413400 10.44400 19.83000
+    ## [13,]  8.397634  9.037207 10.21264 13.30600

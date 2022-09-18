@@ -119,7 +119,11 @@ hist(sapply(2:(nrow(grid)-1), function(x){euclidean(x, 1)}), breaks = 10, main =
 hist(sapply(3:(nrow(grid)-2), function(x){euclidean(x, 2)}), breaks = 10, main = "", xlab = "Distance (m)", xlim = c(0, 4))
 ```
 
-Among the available holds within `max_dist`, the probability of innovating a hold will be weighted by the distance between the adjacent holds. Specifically, we will rank the possible holds to skip in ascending order by the distance between the adjacent holds, invert it, and raise it to the power of a parameter `constraint`. In other words, if skipping a hold means traversing a larger distance, then that hold will be less likely to be skipped.
+Among the available holds within `max_dist`, the probability of innovating a hold will be based on two things: (1) the distance between the adjacent holds, and (2) the ratio between the original path distance and the new path distance. The first of these reflects a preference for skipping holds that lead to smaller gaps in the route, and the second reflects a preference for skipping holds that make the path more direct. For both measures, we will rank the possible holds to skip in ascending order by the distance ($R_{dist}$) and path ratio ($R_{ratio}$), invert them, and raise them to the power of parameters `constraint_a` and `constraint_b`. So, the random sampling of holds to skip will be weighted by the following:
+
+$$(1 / R_{dist})^{constraint_{a}} * (1 / R_{ratio})^{constraint_{b}}$$
+
+In other words, if skipping a hold means traversing a shorter and more direct distance, then that hold will be more likely to be skipped.
 
 See `SpeedClimbingABM.R` for more details.
 

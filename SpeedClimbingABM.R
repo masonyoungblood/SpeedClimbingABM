@@ -19,7 +19,8 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # learn_x_pop <- 0
 # n_top <- 10
 # max_dist <- 2
-# constraint <- 1
+# constraint_a <- 1
+# constraint_b <- 1
 # improve_rate_m <- 2
 # improve_rate_sd <- 0.5
 # improve_min <- 0.8
@@ -31,7 +32,7 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # quant_by <- 0.2
 
 #function for the model
-SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, max_dist, constraint = 0, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
+SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, max_dist, constraint_a = 0, constraint_b = 0, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #handle output booleans
   if(raw){
     sum_stats <- FALSE
@@ -128,8 +129,8 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
         
         #if any holds are available
         if(length(ok_holds) >= 1){
-          #get euclidean distances between adjacent holds for each option
-          euc_dists <- sapply(1:length(ok_holds), function(x){
+          #get euclidean distances between adjacent holds for each option (column 1), and ratios between original and new path distances (column 2)
+          euc_dists <- t(sapply(1:length(ok_holds), function(x){
             #store adjacent distances (with added TRUEs for first hold and final buzzer)
             adj_dists <- c(1, ok_holds, n_holds+1)-ok_holds[x]
             
@@ -137,12 +138,16 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
             lower_adj <- c(1, ok_holds, n_holds+1)[which.min(abs(adj_dists[which(adj_dists < 0)]))]
             upper_adj <- c(1, ok_holds, n_holds+1)[which(adj_dists > 0)[which.min(adj_dists[which(adj_dists > 0)])]]
             
-            #return euclidean distance between them
-            return(sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2))
-          })
+            #return euclidean distances of original and new paths
+            orig_dist <- sqrt((grid$x[ok_holds[x]]-grid$x[lower_adj])^2+(grid$y[ok_holds[x]]-grid$y[lower_adj])^2) + sqrt((grid$x[upper_adj]-grid$x[ok_holds[x]])^2+(grid$y[upper_adj]-grid$y[ok_holds[x]])^2)
+            new_dist <- sqrt((grid$x[upper_adj]-grid$x[lower_adj])^2+(grid$y[upper_adj]-grid$y[lower_adj])^2)
+            
+            #return euclidean distance and ratio
+            return(c(new_dist, orig_dist/new_dist))
+          }))
           
           #only include holds less than maximum distance
-          ok_holds <- ok_holds[which(euc_dists <= max_dist)]
+          ok_holds <- ok_holds[which(euc_dists[, 1] <= max_dist)]
           
           #store length for boolean statements
           ok_length <- length(ok_holds)
@@ -157,10 +162,10 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
             
             if(ok_length > 1){
               #subset distances for weighted sampling
-              euc_dists <- euc_dists[which(euc_dists <= max_dist)]
+              euc_dists <- euc_dists[which(euc_dists[, 1] <= max_dist), ]
               
               #choose position to flip
-              beta_to_flip <- sample(ok_holds, 1, prob = (1/rank(euc_dists))^constraint)
+              beta_to_flip <- sample(ok_holds, 1, prob = ((1/rank(euc_dists[, 1]))^constraint_a)*((1/rank(euc_dists[, 2]))^constraint_b))
             }
             
             #get used hold below and above flipped beta for resampling times
