@@ -77,17 +77,17 @@ for(i in 1:rounds){
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
     #get posteriors for each parameter for prior sampling
-    innov_prob_post <- ash::ash1(ash::bin1(params$innov_prob[order(results)[1:(n_sim*tol)]], ab = c(min(params$innov_prob), max(params$innov_prob)), nbin = 1000), kopt = c(0, 0))
-    innov_x_times_post <- ash::ash1(ash::bin1(params$innov_x_times[order(results)[1:(n_sim*tol)]], ab = c(min(params$innov_x_times), max(params$innov_x_times)), nbin = 1000), kopt = c(0, 0))
-    innov_x_pop_post <- ash::ash1(ash::bin1(params$innov_x_pop[order(results)[1:(n_sim*tol)]], ab = c(min(params$innov_x_pop), max(params$innov_x_pop)), nbin = 1000), kopt = c(0, 0))
-    learn_prob_post <- ash::ash1(ash::bin1(params$learn_prob[order(results)[1:(n_sim*tol)]], ab = c(min(params$learn_prob), max(params$learn_prob)), nbin = 1000), kopt = c(0, 0))
-    learn_x_times_post <- ash::ash1(ash::bin1(params$learn_x_times[order(results)[1:(n_sim*tol)]], ab = c(min(params$learn_x_times), max(params$learn_x_times)), nbin = 1000), kopt = c(0, 0))
-    learn_x_pop_post <- ash::ash1(ash::bin1(params$learn_x_pop[order(results)[1:(n_sim*tol)]], ab = c(min(params$learn_x_pop), max(params$learn_x_pop)), nbin = 1000), kopt = c(0, 0))
-    n_top_post <- ash::ash1(ash::bin1(params$n_top[order(results)[1:(n_sim*tol)]], ab = c(min(params$n_top), max(params$n_top)), nbin = 1000), kopt = c(0, 0))
-    constraint_a_post <- ash::ash1(ash::bin1(params$constraint_a[order(results)[1:(n_sim*tol)]], ab = c(min(params$constraint_a), max(params$constraint_a)), nbin = 1000), kopt = c(0, 0))
-    constraint_b_post <- ash::ash1(ash::bin1(params$constraint_b[order(results)[1:(n_sim*tol)]], ab = c(min(params$constraint_b), max(params$constraint_b)), nbin = 1000), kopt = c(0, 0))
-    improve_rate_m_post <- ash::ash1(ash::bin1(params$improve_rate_m[order(results)[1:(n_sim*tol)]], ab = c(min(params$improve_rate_m), max(params$improve_rate_m)), nbin = 1000), kopt = c(0, 0))
-    improve_rate_sd_post <- ash::ash1(ash::bin1(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], ab = c(min(params$improve_rate_sd), max(params$improve_rate_sd)), nbin = 1000), kopt = c(0, 0))
+    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob[order(results)[1:(n_sim*tol)]]), to = max(params$innov_prob[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_times[order(results)[1:(n_sim*tol)]]), to = max(params$innov_x_times[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_pop[order(results)[1:(n_sim*tol)]]), to = max(params$innov_x_pop[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob[order(results)[1:(n_sim*tol)]]), to = max(params$learn_prob[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_times[order(results)[1:(n_sim*tol)]]), to = max(params$learn_x_times[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_pop[order(results)[1:(n_sim*tol)]]), to = max(params$learn_x_pop[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top[order(results)[1:(n_sim*tol)]]), to = max(params$n_top[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    constraint_a_post <- density(params$constraint_a[order(results)[1:(n_sim*tol)]], from = min(params$constraint_a[order(results)[1:(n_sim*tol)]]), to = max(params$constraint_a[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    constraint_b_post <- density(params$constraint_b[order(results)[1:(n_sim*tol)]], from = min(params$constraint_b[order(results)[1:(n_sim*tol)]]), to = max(params$constraint_b[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), to = max(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
+    improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd[order(results)[1:(n_sim*tol)]]), to = max(params$improve_rate_sd[order(results)[1:(n_sim*tol)]]), bw = "SJ", kernel = "gaussian")
     
     rm(list = c("params", "results"))
     
