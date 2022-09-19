@@ -77,18 +77,18 @@ for(i in 1:rounds){
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
     #get posteriors for each parameter for prior sampling
-    innov_prob_post <- KernSmooth::bkde(params$innov_prob[order(results)[1:(n_sim*tol)]], range.x = c(min(params$innov_prob), max(params$innov_prob)))
-    innov_x_times_post <- KernSmooth::bkde(params$innov_x_times[order(results)[1:(n_sim*tol)]], range.x = c(min(params$innov_x_times), max(params$innov_x_times)))
-    innov_x_pop_post <- KernSmooth::bkde(params$innov_x_pop[order(results)[1:(n_sim*tol)]], range.x = c(min(params$innov_x_pop), max(params$innov_x_pop)))
-    learn_prob_post <- KernSmooth::bkde(params$learn_prob[order(results)[1:(n_sim*tol)]], range.x = c(min(params$learn_prob), max(params$learn_prob)))
-    learn_x_times_post <- KernSmooth::bkde(params$learn_x_times[order(results)[1:(n_sim*tol)]], range.x = c(min(params$learn_x_times), max(params$learn_x_times)))
-    learn_x_pop_post <- KernSmooth::bkde(params$learn_x_pop[order(results)[1:(n_sim*tol)]], range.x = c(min(params$learn_x_pop), max(params$learn_x_pop)))
-    n_top_post <- KernSmooth::bkde(params$n_top[order(results)[1:(n_sim*tol)]], range.x = c(min(params$n_top), max(params$n_top)))
-    constraint_a_post <- KernSmooth::bkde(params$constraint_a[order(results)[1:(n_sim*tol)]], range.x = c(min(params$constraint_a), max(params$constraint_a)))
-    constraint_b_post <- KernSmooth::bkde(params$constraint_b[order(results)[1:(n_sim*tol)]], range.x = c(min(params$constraint_b), max(params$constraint_b)))
-    improve_rate_m_post <- KernSmooth::bkde(params$improve_rate_m[order(results)[1:(n_sim*tol)]], range.x = c(min(params$improve_rate_m), max(params$improve_rate_m)))
-    improve_rate_sd_post <- KernSmooth::bkde(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], range.x = c(min(params$improve_rate_sd), max(params$improve_rate_sd)))
-
+    innov_prob_post <- ash1(bin1(params$innov_prob[order(results)[1:(n_sim*tol)]], ab = c(min(params$innov_prob), max(params$innov_prob)), nbin = 1000), kopt = c(0, 0))
+    innov_x_times_post <- ash1(bin1(params$innov_x_times[order(results)[1:(n_sim*tol)]], ab = c(min(params$innov_x_times), max(params$innov_x_times)), nbin = 1000), kopt = c(0, 0))
+    innov_x_pop_post <- ash1(bin1(params$innov_x_pop[order(results)[1:(n_sim*tol)]], ab = c(min(params$innov_x_pop), max(params$innov_x_pop)), nbin = 1000), kopt = c(0, 0))
+    learn_prob_post <- ash1(bin1(params$learn_prob[order(results)[1:(n_sim*tol)]], ab = c(min(params$learn_prob), max(params$learn_prob)), nbin = 1000), kopt = c(0, 0))
+    learn_x_times_post <- ash1(bin1(params$learn_x_times[order(results)[1:(n_sim*tol)]], ab = c(min(params$learn_x_times), max(params$learn_x_times)), nbin = 1000), kopt = c(0, 0))
+    learn_x_pop_post <- ash1(bin1(params$learn_x_pop[order(results)[1:(n_sim*tol)]], ab = c(min(params$learn_x_pop), max(params$learn_x_pop)), nbin = 1000), kopt = c(0, 0))
+    n_top_post <- ash1(bin1(params$n_top[order(results)[1:(n_sim*tol)]], ab = c(min(params$n_top), max(params$n_top)), nbin = 1000), kopt = c(0, 0))
+    constraint_a_post <- ash1(bin1(params$constraint_a[order(results)[1:(n_sim*tol)]], ab = c(min(params$constraint_a), max(params$constraint_a)), nbin = 1000), kopt = c(0, 0))
+    constraint_b_post <- ash1(bin1(params$constraint_b[order(results)[1:(n_sim*tol)]], ab = c(min(params$constraint_b), max(params$constraint_b)), nbin = 1000), kopt = c(0, 0))
+    improve_rate_m_post <- ash1(bin1(params$improve_rate_m[order(results)[1:(n_sim*tol)]], ab = c(min(params$improve_rate_m), max(params$improve_rate_m)), nbin = 1000), kopt = c(0, 0))
+    improve_rate_sd_post <- ash1(bin1(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], ab = c(min(params$improve_rate_sd), max(params$improve_rate_sd)), nbin = 1000), kopt = c(0, 0))
+    
     rm(list = c("params", "results"))
     
     #set new priors by sampling from posteriors
