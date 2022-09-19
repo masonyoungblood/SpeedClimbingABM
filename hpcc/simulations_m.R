@@ -112,17 +112,17 @@ for(i in 1:rounds){
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
     #get posteriors for each parameter for prior sampling
-    innov_prob_post <- bde::bde(params$innov_prob[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[1, 1], bounds[1, 2], length.out = dens_res), lower.limit = bounds[1, 1], upper.limit = bounds[1, 2], estimator = "vitale")
-    innov_x_times_post <- bde::bde(params$innov_x_times[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[2, 1], bounds[2, 2], length.out = dens_res), lower.limit = bounds[2, 1], upper.limit = bounds[2, 2], estimator = "vitale")
-    innov_x_pop_post <- bde::bde(params$innov_x_pop[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[3, 1], bounds[3, 2], length.out = dens_res), lower.limit = bounds[3, 1], upper.limit = bounds[3, 2], estimator = "vitale")
-    learn_prob_post <- bde::bde(params$learn_prob[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[4, 1], bounds[4, 2], length.out = dens_res), lower.limit = bounds[4, 1], upper.limit = bounds[4, 2], estimator = "vitale")
-    learn_x_times_post <- bde::bde(params$learn_x_times[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[5, 1], bounds[5, 2], length.out = dens_res), lower.limit = bounds[5, 1], upper.limit = bounds[5, 2], estimator = "vitale")
-    learn_x_pop_post <- bde::bde(params$learn_x_pop[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[6, 1], bounds[6, 2], length.out = dens_res), lower.limit = bounds[6, 1], upper.limit = bounds[6, 2], estimator = "vitale")
-    n_top_post <- bde::bde(params$n_top[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[7, 1], bounds[7, 2], length.out = dens_res), lower.limit = bounds[7, 1], upper.limit = bounds[7, 2], estimator = "vitale")
-    constraint_a_post <- bde::bde(params$constraint_a[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[8, 1], bounds[8, 2], length.out = dens_res), lower.limit = bounds[8, 1], upper.limit = bounds[8, 2], estimator = "vitale")
-    constraint_b_post <- bde::bde(params$constraint_b[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[9, 1], bounds[9, 2], length.out = dens_res), lower.limit = bounds[9, 1], upper.limit = bounds[9, 2], estimator = "vitale")
-    improve_rate_m_post <- bde::bde(params$improve_rate_m[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[10, 1], bounds[10, 2], length.out = dens_res), lower.limit = bounds[10, 1], upper.limit = bounds[10, 2], estimator = "vitale")
-    improve_rate_sd_post <- bde::bde(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[11, 1], bounds[11, 2], length.out = dens_res), lower.limit = bounds[11, 1], upper.limit = bounds[11, 2], estimator = "vitale")
+    innov_prob_post <- bde::bde(params$innov_prob[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[1, 1], bounds[1, 2], length.out = dens_res), lower.limit = bounds[1, 1], upper.limit = bounds[1, 2], estimator = "betakernel")
+    innov_x_times_post <- bde::bde(params$innov_x_times[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[2, 1], bounds[2, 2], length.out = dens_res), lower.limit = bounds[2, 1], upper.limit = bounds[2, 2], estimator = "betakernel")
+    innov_x_pop_post <- bde::bde(params$innov_x_pop[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[3, 1], bounds[3, 2], length.out = dens_res), lower.limit = bounds[3, 1], upper.limit = bounds[3, 2], estimator = "betakernel")
+    learn_prob_post <- bde::bde(params$learn_prob[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[4, 1], bounds[4, 2], length.out = dens_res), lower.limit = bounds[4, 1], upper.limit = bounds[4, 2], estimator = "betakernel")
+    learn_x_times_post <- bde::bde(params$learn_x_times[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[5, 1], bounds[5, 2], length.out = dens_res), lower.limit = bounds[5, 1], upper.limit = bounds[5, 2], estimator = "betakernel")
+    learn_x_pop_post <- bde::bde(params$learn_x_pop[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[6, 1], bounds[6, 2], length.out = dens_res), lower.limit = bounds[6, 1], upper.limit = bounds[6, 2], estimator = "betakernel")
+    n_top_post <- bde::bde(params$n_top[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[7, 1], bounds[7, 2], length.out = dens_res), lower.limit = bounds[7, 1], upper.limit = bounds[7, 2], estimator = "betakernel")
+    constraint_a_post <- bde::bde(params$constraint_a[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[8, 1], bounds[8, 2], length.out = dens_res), lower.limit = bounds[8, 1], upper.limit = bounds[8, 2], estimator = "betakernel")
+    constraint_b_post <- bde::bde(params$constraint_b[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[9, 1], bounds[9, 2], length.out = dens_res), lower.limit = bounds[9, 1], upper.limit = bounds[9, 2], estimator = "betakernel")
+    improve_rate_m_post <- bde::bde(params$improve_rate_m[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[10, 1], bounds[10, 2], length.out = dens_res), lower.limit = bounds[10, 1], upper.limit = bounds[10, 2], estimator = "betakernel")
+    improve_rate_sd_post <- bde::bde(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], dataPointsCache = seq(bounds[11, 1], bounds[11, 2], length.out = dens_res), lower.limit = bounds[11, 1], upper.limit = bounds[11, 2], estimator = "betakernel")
     
     rm(list = c("params", "results"))
     
