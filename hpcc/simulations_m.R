@@ -68,26 +68,26 @@ for(i in 1:rounds){
                          learn_x_times = runif(n_sim, -0.5, 0.5),
                          learn_x_pop = runif(n_sim, -0.5, 0.5),
                          n_top = runif(n_sim, 1, 34),
-                         constraint_a = runif(n_sim, 0, 4),
-                         constraint_b = runif(n_sim, 0, 4),
-                         improve_rate_m = runif(n_sim, 1, 4),
-                         improve_rate_sd = runif(n_sim, 0, 0.5))
+                         constraint_a = runif(n_sim, -5, 5),
+                         constraint_b = runif(n_sim, -5, 5),
+                         improve_rate_m = runif(n_sim, 1, 3),
+                         improve_rate_sd = runif(n_sim, 0, 0.2))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
     #get posteriors for each parameter for prior sampling
-    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob), to = max(params$innov_prob), bw = "SJ", kernel = "gaussian")
-    innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_times), to = max(params$innov_x_times), bw = "SJ", kernel = "gaussian")
-    innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_pop), to = max(params$innov_x_pop), bw = "SJ", kernel = "gaussian")
-    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob), to = max(params$learn_prob), bw = "SJ", kernel = "gaussian")
-    learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_times), to = max(params$learn_x_times), bw = "SJ", kernel = "gaussian")
-    learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_pop), to = max(params$learn_x_pop), bw = "SJ", kernel = "gaussian")
-    n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top), to = max(params$n_top), bw = "SJ", kernel = "gaussian")
-    constraint_a_post <- density(params$constraint_a[order(results)[1:(n_sim*tol)]], from = min(params$constraint_a), to = max(params$constraint_a), bw = "SJ", kernel = "gaussian")
-    constraint_b_post <- density(params$constraint_b[order(results)[1:(n_sim*tol)]], from = min(params$constraint_b), to = max(params$constraint_b), bw = "SJ", kernel = "gaussian")
-    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m), to = max(params$improve_rate_m), bw = "SJ", kernel = "gaussian")
-    improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd), to = max(params$improve_rate_sd), bw = "SJ", kernel = "gaussian")
+    innov_prob_post <- KernSmooth::bkde(params$innov_prob[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$innov_prob), max(params$innov_prob)))
+    innov_x_times_post <- KernSmooth::bkde(params$innov_x_times[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$innov_x_times), max(params$innov_x_times)))
+    innov_x_pop_post <- KernSmooth::bkde(params$innov_x_pop[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$innov_x_pop), max(params$innov_x_pop)))
+    learn_prob_post <- KernSmooth::bkde(params$learn_prob[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$learn_prob), max(params$learn_prob)))
+    learn_x_times_post <- KernSmooth::bkde(params$learn_x_times[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$learn_x_times), max(params$learn_x_times)))
+    learn_x_pop_post <- KernSmooth::bkde(params$learn_x_pop[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$learn_x_pop), max(params$learn_x_pop)))
+    n_top_post <- KernSmooth::bkde(params$n_top[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$n_top), max(params$n_top)))
+    constraint_a_post <- KernSmooth::bkde(params$constraint_a[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$constraint_a), max(params$constraint_a)))
+    constraint_b_post <- KernSmooth::bkde(params$constraint_b[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$constraint_b), max(params$constraint_b)))
+    improve_rate_m_post <- KernSmooth::bkde(params$improve_rate_m[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$improve_rate_m), max(params$improve_rate_m)))
+    improve_rate_sd_post <- KernSmooth::bkde(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], kernel = "box", range.x = c(min(params$improve_rate_sd), max(params$improve_rate_sd)))
 
     rm(list = c("params", "results"))
     

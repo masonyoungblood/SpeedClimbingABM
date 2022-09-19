@@ -127,6 +127,12 @@ In other words, if skipping a hold means traversing a shorter and more direct di
 
 See `SpeedClimbingABM.R` for more details.
 
+```{r, echo=FALSE, eval=FALSE}
+#fall rate over time
+orig_data <- read.csv("~/Documents/Work/Summer_2021/Speed Climbing/speed_climbing_data/speedclimbing_results.csv")
+sapply(2007:2019, function(x){length(which(orig_data$score[which(haiii$Year == x)] %in% c("Fall", "FALL", "fall")))/length(orig_data$score[which(orig_data$Year == x)])})
+```
+
 ## Social Learning
 
 In each timestep, each climber also has a certain `learn_prob` probability of copying the beta of another climber. When a climber copies another climber, they only have access to the top `n_top` fastest climbers in the current timestep. They "try out" all of the betas of the fastest climbers that are different from their own beta, and if one of them yields a faster time then they overwrite their current `beta` and `seq_ratios` with those of better beta. See `SpeedClimbingABM.R` for details.
