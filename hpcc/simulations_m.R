@@ -121,8 +121,8 @@ for(i in 1:rounds){
     n_top_post <- params$n_top[order(results)[1:(n_sim*tol)]]
     constraint_a_post <- params$constraint_a[order(results)[1:(n_sim*tol)]]
     constraint_b_post <- params$constraint_b[order(results)[1:(n_sim*tol)]]
-    improve_rate_m_post <- params$improve_rate_m_post[order(results)[1:(n_sim*tol)]]
-    improve_rate_sd_post <- params$improve_rate_sd_post[order(results)[1:(n_sim*tol)]]
+    improve_rate_m_post <- params$improve_rate_m[order(results)[1:(n_sim*tol)]]
+    improve_rate_sd_post <- params$improve_rate_sd[order(results)[1:(n_sim*tol)]]
     
     #get posteriors for each parameter for prior sampling
     innov_prob_post <- bde::bde(innov_prob_post, dataPointsCache = seq(min(innov_prob_post), max(innov_prob_post), length.out = dens_res), lower.limit = min(innov_prob_post), upper.limit = max(innov_prob_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
