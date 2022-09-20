@@ -58,6 +58,7 @@ obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, learn_prob, learn_x_times, learn_x_pop, n_top, constraint_a, constraint_b, improve_rate_m, improve_rate_sd){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, 
+                           innov_x_times = innov_x_times, innov_x_pop = innov_x_pop, learn_x_times = learn_x_times, learn_x_pop = learn_x_pop,
                            n_top = n_top, max_dist = 1.645, constraint_a = constraint_a, constraint_b = constraint_b,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, 
                            improve_min = 0.4114153, sum_stats = FALSE, plot = FALSE)
