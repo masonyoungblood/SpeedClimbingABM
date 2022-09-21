@@ -59,9 +59,6 @@ tol <- 0.5
 #number of rounds
 rounds <- 500
 
-#set resolution of density estimation
-dens_res <- 1000
-
 for(i in 1:rounds){
   if(i == 1){
     #set priors
