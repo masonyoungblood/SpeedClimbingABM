@@ -9,24 +9,6 @@ euclidean <- function(obs_stats, sum_stats){
   return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))*(x/length(obs_stats))})))
 }
 
-#sample from arbitrary distribution function using grid search: https://jsta.github.io/rv/reference/rvdens.html
-arb_sample <- function(n, object){
-  #get grids and probabilities from bde object
-  x <- bde::getdataPointsCache(object)
-  y <- bde::getdensityCache(object)
-  y[which(y < 0)] <- 0
-  
-  #sample from the grid and add scaled noise
-  s <- sample(x, size = n, prob = y, replace = TRUE)
-  s <- s + runif(length(s), (x[1]-x[2])/2, (x[2]-x[1])/2)
-  
-  #replace numbers out of bounds
-  s[which(s < min(x))] <- min(x)
-  s[which(s > max(x))] <- max(x)
-  
-  return(s)
-}
-
 #subset data by gender
 data <- data[which(data$gender == "M"), ]
 
@@ -80,78 +62,51 @@ rounds <- 500
 #set resolution of density estimation
 dens_res <- 1000
 
-#set bounds of priors
-bounds <- matrix(ncol = 2, byrow = TRUE,
-                 c(0, 1, #innov_prob
-                   -0.5, 0.5, #innov_x_times
-                   -0.5, 0.5, #innov_x_pop
-                   0, 1, #learn_prob
-                   -0.5, 0.5, #learn_x_times
-                   -0.5, 0.5, #learn_x_pop
-                   1, 34, #n_top
-                   -5, 5, #constraint_a
-                   -5, 5, #constraint_b
-                   1, 3, #improve_rate_m
-                   0, 0.2)) #improve_rate_sd
-
 for(i in 1:rounds){
   if(i == 1){
     #set priors
-    priors <- data.frame(innov_prob = runif(n_sim, bounds[1, 1], bounds[1, 2]),
-                         innov_x_times = runif(n_sim, bounds[2, 1], bounds[2, 2]),
-                         innov_x_pop = runif(n_sim, bounds[3, 1], bounds[3, 2]),
-                         learn_prob = runif(n_sim, bounds[4, 1], bounds[4, 2]),
-                         learn_x_times = runif(n_sim, bounds[5, 1], bounds[5, 2]),
-                         learn_x_pop = runif(n_sim, bounds[6, 1], bounds[6, 2]),
-                         n_top = runif(n_sim, bounds[7, 1], bounds[7, 2]),
-                         constraint_a = runif(n_sim, bounds[8, 1], bounds[8, 2]),
-                         constraint_b = runif(n_sim, bounds[9, 1], bounds[9, 2]),
-                         improve_rate_m = runif(n_sim, bounds[10, 1], bounds[10, 2]),
-                         improve_rate_sd = runif(n_sim, bounds[11, 1], bounds[11, 2]))
+    priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
+                         innov_x_times = rnorm(n_sim, 0, 0.5),
+                         innov_x_pop = rnorm(n_sim, 0, 0.5),
+                         learn_prob = rbeta(n_sim, 1, 2),
+                         learn_x_times = rnorm(n_sim, 0, 0.5),
+                         learn_x_pop = rnorm(n_sim, 0, 0.5),
+                         n_top = runif(n_sim, 1, 34),
+                         constraint_a = rnorm(n_sim, 0, 3),
+                         constraint_b = rnorm(n_sim, 0, 3),
+                         improve_rate_m = runif(n_sim, 1, 3),
+                         improve_rate_sd = rexp(n_sim, 10))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
-    #get closes parameter values for density estimation
-    innov_prob_post <- params$innov_prob[order(results)[1:(n_sim*tol)]]
-    innov_x_times_post <- params$innov_x_times[order(results)[1:(n_sim*tol)]]
-    innov_x_pop_post <- params$innov_x_pop[order(results)[1:(n_sim*tol)]]
-    learn_prob_post <- params$learn_prob[order(results)[1:(n_sim*tol)]]
-    learn_x_times_post <- params$learn_x_times[order(results)[1:(n_sim*tol)]]
-    learn_x_pop_post <- params$learn_x_pop[order(results)[1:(n_sim*tol)]]
-    n_top_post <- params$n_top[order(results)[1:(n_sim*tol)]]
-    constraint_a_post <- params$constraint_a[order(results)[1:(n_sim*tol)]]
-    constraint_b_post <- params$constraint_b[order(results)[1:(n_sim*tol)]]
-    improve_rate_m_post <- params$improve_rate_m[order(results)[1:(n_sim*tol)]]
-    improve_rate_sd_post <- params$improve_rate_sd[order(results)[1:(n_sim*tol)]]
-    
     #get posteriors for each parameter for prior sampling
-    innov_prob_post <- bde::bde(innov_prob_post, dataPointsCache = seq(min(innov_prob_post), max(innov_prob_post), length.out = dens_res), lower.limit = min(innov_prob_post), upper.limit = max(innov_prob_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    innov_x_times_post <- bde::bde(innov_x_times_post, dataPointsCache = seq(min(innov_x_times_post), max(innov_x_times_post), length.out = dens_res), lower.limit = min(innov_x_times_post), upper.limit = max(innov_x_times_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    innov_x_pop_post <- bde::bde(innov_x_pop_post, dataPointsCache = seq(min(innov_x_pop_post), max(innov_x_pop_post), length.out = dens_res), lower.limit = min(innov_x_pop_post), upper.limit = max(innov_x_pop_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    learn_prob_post <- bde::bde(learn_prob_post, dataPointsCache = seq(min(learn_prob_post), max(learn_prob_post), length.out = dens_res), lower.limit = min(learn_prob_post), upper.limit = max(learn_prob_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    learn_x_times_post <- bde::bde(learn_x_times_post, dataPointsCache = seq(min(learn_x_times_post), max(learn_x_times_post), length.out = dens_res), lower.limit = min(learn_x_times_post), upper.limit = max(learn_x_times_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    learn_x_pop_post <- bde::bde(learn_x_pop_post, dataPointsCache = seq(min(learn_x_pop_post), max(learn_x_pop_post), length.out = dens_res), lower.limit = min(learn_x_pop_post), upper.limit = max(learn_x_pop_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    n_top_post <- bde::bde(n_top_post, dataPointsCache = seq(min(n_top_post), max(n_top_post), length.out = dens_res), lower.limit = min(n_top_post), upper.limit = max(n_top_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    constraint_a_post <- bde::bde(constraint_a_post, dataPointsCache = seq(min(constraint_a_post), max(constraint_a_post), length.out = dens_res), lower.limit = min(constraint_a_post), upper.limit = max(constraint_a_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    constraint_b_post <- bde::bde(constraint_b_post, dataPointsCache = seq(min(constraint_b_post), max(constraint_b_post), length.out = dens_res), lower.limit = min(constraint_b_post), upper.limit = max(constraint_b_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    improve_rate_m_post <- bde::bde(improve_rate_m_post, dataPointsCache = seq(min(improve_rate_m_post), max(improve_rate_m_post), length.out = dens_res), lower.limit = min(improve_rate_m_post), upper.limit = max(improve_rate_m_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
-    improve_rate_sd_post <- bde::bde(improve_rate_sd_post, dataPointsCache = seq(min(improve_rate_sd_post), max(improve_rate_sd_post), length.out = dens_res), lower.limit = min(improve_rate_sd_post), upper.limit = max(improve_rate_sd_post), estimator = "betakernel", options = list(modified = TRUE, mbc = "jnl"))
+    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = 0, to = 1, n = 2^12, bw = "SJ")
+    innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = 0, to = 1, n = 2^12, bw = "SJ")
+    learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = 1, to = 34, n = 2^12, bw = "SJ")
+    constraint_a_post <- density(params$constraint_a[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    constraint_b_post <- density(params$constraint_b[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = 1, to = 3, n = 2^12, bw = "SJ")
+    improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = 0, n = 2^12, bw = "SJ")
     
     rm(list = c("params", "results"))
     
     #set new priors by sampling from posteriors
-    priors <- data.frame(innov_prob = arb_sample(n_sim, innov_prob_post),
-                         innov_x_times = arb_sample(n_sim, innov_x_times_post),
-                         innov_x_pop = arb_sample(n_sim, innov_x_pop_post),
-                         learn_prob = arb_sample(n_sim, learn_prob_post),
-                         learn_x_times = arb_sample(n_sim, learn_x_times_post),
-                         learn_x_pop = arb_sample(n_sim, learn_x_pop_post),
-                         n_top = arb_sample(n_sim, n_top_post),
-                         constraint_a = arb_sample(n_sim, constraint_a_post),
-                         constraint_b = arb_sample(n_sim, constraint_b_post),
-                         improve_rate_m = arb_sample(n_sim, improve_rate_m_post),
-                         improve_rate_sd = arb_sample(n_sim, improve_rate_sd_post))
+    priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
+                         innov_x_times = sample(innov_x_times_post$x, n_sim, replace = TRUE, prob = innov_x_times_post$y),
+                         innov_x_pop = sample(innov_x_pop_post$x, n_sim, replace = TRUE, prob = innov_x_pop_post$y),
+                         learn_prob = sample(learn_prob_post$x, n_sim, replace = TRUE, prob = learn_prob_post$y),
+                         learn_x_times = sample(learn_x_times_post$x, n_sim, replace = TRUE, prob = learn_x_times_post$y),
+                         learn_x_pop = sample(learn_x_pop_post$x, n_sim, replace = TRUE, prob = learn_x_pop_post$y),
+                         n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
+                         constraint_a = sample(constraint_a_post$x, n_sim, replace = TRUE, prob = constraint_a_post$y),
+                         constraint_b = sample(constraint_b_post$x, n_sim, replace = TRUE, prob = constraint_b_post$y),
+                         improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
+                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
     
     rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post",
                 "learn_prob_post", "learn_x_times_post", "learn_x_pop_post",
