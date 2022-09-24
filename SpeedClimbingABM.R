@@ -32,7 +32,12 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # quant_by <- 0.2
 
 #function for the model
-SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, innov_prob, max_dist, constraint_a = 0, constraint_b = 0, grid, innov_x_times = 0, innov_x_pop = 0, improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
+SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, 
+                             learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, learn_x_year = 0,
+                             innov_prob, max_dist, constraint_a = 0, constraint_b = 0, grid,
+                             innov_x_times = 0, innov_x_pop = 0, innov_x_year = 0, 
+                             improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, 
+                             sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #handle output booleans
   if(raw){
     sum_stats <- FALSE
@@ -48,9 +53,10 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
   dists <- sapply(1:n_holds, function(x){sqrt((grid$x[x+1] - grid$x[x])^2 + (grid$y[x+1] - grid$y[x])^2)})
 
   #get booleans for whether learning and innovation needs to be individually calculated, and scale and center population size
-  learn_bool <- learn_x_times > 0 | learn_x_pop > 0
-  innov_bool <- innov_x_times > 0 | innov_x_pop > 0
+  learn_bool <- learn_x_times != 0 | learn_x_pop != 0 | learn_x_year != 0
+  innov_bool <- innov_x_times != 0 | innov_x_pop != 0 | innov_x_year != 0
   n_scale <- scale(n)
+  y_scale <- scale(1:length(n))
   
   #initialize starting beta for all agents
   beta <- sample(c(TRUE, FALSE), n_holds, prob = c(beta_true_prob, 1-beta_true_prob), replace = TRUE)
@@ -83,8 +89,8 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, learn_
     
     #if needed, calculate the unique learn_prob and innov_prob for each old and new climber in this timestep
     t_scale <- scale(climbers$current_record)
-    if(learn_bool){learn_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(learn_prob) + learn_x_times*t_scale[x] + learn_x_pop*n_scale[i])})}
-    if(innov_bool){innov_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(innov_prob) + innov_x_times*t_scale[x] + innov_x_pop*n_scale[i])})}
+    if(learn_bool){learn_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(learn_prob) + learn_x_times*t_scale[x] + learn_x_pop*n_scale[i] + learn_x_year*y_scale[i])})}
+    if(innov_bool){innov_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(innov_prob) + innov_x_times*t_scale[x] + innov_x_pop*n_scale[i] + innov_x_year*y_scale[i])})}
     
     #get who will learn
     if(learn_bool){to_learn <- sapply(1:nrow(climbers), function(x){sample(c(TRUE, FALSE), 1, prob = c(learn_prob_ind[x], 1-learn_prob_ind[x]))})}

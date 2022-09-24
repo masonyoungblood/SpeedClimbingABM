@@ -65,9 +65,11 @@ for(i in 1:rounds){
     priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
                          innov_x_times = rnorm(n_sim, 0, 0.5),
                          innov_x_pop = rnorm(n_sim, 0, 0.5),
+                         innov_x_year = rnorm(n_sim, 0, 0.5),
                          learn_prob = rbeta(n_sim, 1, 2),
                          learn_x_times = rnorm(n_sim, 0, 0.5),
                          learn_x_pop = rnorm(n_sim, 0, 0.5),
+                         learn_x_year = rnorm(n_sim, 0, 0.5),
                          n_top = runif(n_sim, 1, 28),
                          constraint_a = rnorm(n_sim, 0, 3),
                          constraint_b = rnorm(n_sim, 0, 3),
@@ -81,9 +83,11 @@ for(i in 1:rounds){
     innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = 0, to = 1, n = 2^12, bw = "SJ")
     innov_x_times_post <- density(params$innov_x_times[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
     innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    innov_x_year_post <- density(params$innov_x_year[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
     learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = 0, to = 1, n = 2^12, bw = "SJ")
     learn_x_times_post <- density(params$learn_x_times[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
     learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
+    learn_x_year_post <- density(params$learn_x_year[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
     n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = 1, to = 34, n = 2^12, bw = "SJ")
     constraint_a_post <- density(params$constraint_a[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
     constraint_b_post <- density(params$constraint_b[order(results)[1:(n_sim*tol)]], n = 2^12, bw = "SJ")
@@ -96,17 +100,19 @@ for(i in 1:rounds){
     priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
                          innov_x_times = sample(innov_x_times_post$x, n_sim, replace = TRUE, prob = innov_x_times_post$y),
                          innov_x_pop = sample(innov_x_pop_post$x, n_sim, replace = TRUE, prob = innov_x_pop_post$y),
+                         innov_x_year = sample(innov_x_year_post$x, n_sim, replace = TRUE, prob = innov_x_year_post$y),
                          learn_prob = sample(learn_prob_post$x, n_sim, replace = TRUE, prob = learn_prob_post$y),
                          learn_x_times = sample(learn_x_times_post$x, n_sim, replace = TRUE, prob = learn_x_times_post$y),
                          learn_x_pop = sample(learn_x_pop_post$x, n_sim, replace = TRUE, prob = learn_x_pop_post$y),
+                         learn_x_year = sample(learn_x_year_post$x, n_sim, replace = TRUE, prob = learn_x_year_post$y),
                          n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
                          constraint_a = sample(constraint_a_post$x, n_sim, replace = TRUE, prob = constraint_a_post$y),
                          constraint_b = sample(constraint_b_post$x, n_sim, replace = TRUE, prob = constraint_b_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
                          improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
     
-    rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post",
-                "learn_prob_post", "learn_x_times_post", "learn_x_pop_post",
+    rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post", "innov_x_year_post",
+                "learn_prob_post", "learn_x_times_post", "learn_x_pop_post", "learn_x_year_post",
                 "n_top_post", "constraint_a", "constraint_b",
                 "improve_rate_m_post", "improve_rate_sd_post"))
   }
