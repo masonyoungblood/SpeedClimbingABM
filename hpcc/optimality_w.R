@@ -77,9 +77,13 @@ sub_priors <- data.frame(innov_x_times = sample(innov_x_times_post$x, n_sim, rep
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
                          improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
 
-#generate innovation and learning values
+#generate innovation and learning values, replacing 0 and 1 to avoid NAs in prob vector error
 innov_probs <- seq(from = 0, to = 1, length.out = dim)
+innov_probs[which(innov_probs == 0)] <- 0.00000001
+innov_probs[which(innov_probs == 1)] <- 0.99999999
 learn_probs <- seq(from = 0, to = 1, length.out = dim)
+learn_probs[which(learn_probs == 0)] <- 0.00000001
+learn_probs[which(learn_probs == 1)] <- 0.99999999
 
 #loop through innovation and learning values and output master priors
 priors <- do.call(rbind, lapply(1:dim, function(x){cbind(innov_prob = innov_probs[x], do.call(rbind, lapply(1:dim, function(x){cbind(learn_prob = learn_probs[x], sub_priors)})))}))
@@ -88,11 +92,11 @@ priors <- do.call(rbind, lapply(1:dim, function(x){cbind(innov_prob = innov_prob
 SpeedClimbingABM_slurm <- function(innov_prob, learn_prob,
                                    innov_x_times, innov_x_pop, innov_x_year,
                                    learn_x_times, learn_x_pop, learn_x_year,
-                                   n_top, max_dist, constraint_a, constraint_b, improve_rate_m, improve_rate_sd){
+                                   n_top, constraint_a, constraint_b, improve_rate_m, improve_rate_sd){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, 
-                           innov_x_times_post = innov_x_times_post, innov_x_pop_post = innov_x_pop_post, innov_x_year_post = innov_x_year_post,
-                           learn_x_times_post = learn_x_times_post, learn_x_pop_post = learn_x_pop_post, learn_x_year_post = learn_x_year_post,
+                           innov_x_times = innov_x_times, innov_x_pop = innov_x_pop, innov_x_year = innov_x_year,
+                           learn_x_times = learn_x_times, learn_x_pop = learn_x_pop, learn_x_year = learn_x_year,
                            n_top = n_top, constraint_a = constraint_a, constraint_b = constraint_b, max_dist = 1.645,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = 0.4114153,
                            sum_stats = FALSE, plot = FALSE)
