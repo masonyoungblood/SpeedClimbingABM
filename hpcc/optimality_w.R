@@ -46,11 +46,17 @@ rm(temp)
 tol <- 1000
 
 #get posteriors to sample priors from
-n_top_post <- density(params$n_top[order(results)[1:tol]], from = min(params$n_top[order(results)[1:tol]]), to = max(params$n_top[order(results)[1:tol]]))
-max_dist_post <- density(params$max_dist[order(results)[1:tol]], from = min(params$max_dist[order(results)[1:tol]]), to = max(params$max_dist[order(results)[1:tol]]))
-constraint_post <- density(params$constraint[order(results)[1:tol]], from = min(params$constraint[order(results)[1:tol]]), to = max(params$constraint[order(results)[1:tol]]))
-improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:tol]], from = min(params$improve_rate_m[order(results)[1:tol]]), to = max(params$improve_rate_m[order(results)[1:tol]]))
-improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:tol]], from = min(params$improve_rate_sd[order(results)[1:tol]]), to = max(params$improve_rate_sd[order(results)[1:tol]]))
+innov_x_times_post <- density(params$innov_x_times[order(results)[1:tol]], from = min(params$innov_x_times[order(results)[1:tol]]), to = max(params$innov_x_times[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+innov_x_pop_post <- density(params$innov_x_pop[order(results)[1:tol]], from = min(params$innov_x_pop[order(results)[1:tol]]), to = max(params$innov_x_pop[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+innov_x_year_post <- density(params$innov_x_year[order(results)[1:tol]], from = min(params$innov_x_year[order(results)[1:tol]]), to = max(params$innov_x_year[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+learn_x_times_post <- density(params$learn_x_times[order(results)[1:tol]], from = min(params$learn_x_times[order(results)[1:tol]]), to = max(params$learn_x_times[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+learn_x_pop_post <- density(params$learn_x_pop[order(results)[1:tol]], from = min(params$learn_x_pop[order(results)[1:tol]]), to = max(params$learn_x_pop[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+learn_x_year_post <- density(params$learn_x_year[order(results)[1:tol]], from = min(params$learn_x_year[order(results)[1:tol]]), to = max(params$learn_x_year[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+n_top_post <- density(params$n_top[order(results)[1:tol]], from = min(params$n_top[order(results)[1:tol]]), to = max(params$n_top[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+constraint_a_post <- density(params$constraint_a[order(results)[1:tol]], from = min(params$constraint_a[order(results)[1:tol]]), to = max(params$constraint_a[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+constraint_b_post <- density(params$constraint_b[order(results)[1:tol]], from = min(params$constraint_b[order(results)[1:tol]]), to = max(params$constraint_b[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:tol]], from = min(params$improve_rate_m[order(results)[1:tol]]), to = max(params$improve_rate_m[order(results)[1:tol]]), n = 2^12, bw = "SJ")
+improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:tol]], from = min(params$improve_rate_sd[order(results)[1:tol]]), to = max(params$improve_rate_sd[order(results)[1:tol]]), n = 2^12, bw = "SJ")
 
 #store number of simulations per pixel
 n_sim <- 200
@@ -59,9 +65,15 @@ n_sim <- 200
 dim <- 50
 
 #generate priors
-sub_priors <- data.frame(n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
-                         max_dist = sample(max_dist_post$x, n_sim, replace = TRUE, prob = max_dist_post$y),
-                         constraint = sample(constraint_post$x, n_sim, replace = TRUE, prob = constraint_post$y),
+sub_priors <- data.frame(innov_x_times = sample(innov_x_times_post$x, n_sim, replace = TRUE, prob = innov_x_times_post$y),
+                         innov_x_pop = sample(innov_x_pop_post$x, n_sim, replace = TRUE, prob = innov_x_pop_post$y),
+                         innov_x_year = sample(innov_x_year_post$x, n_sim, replace = TRUE, prob = innov_x_year_post$y),
+                         learn_x_times = sample(learn_x_times_post$x, n_sim, replace = TRUE, prob = learn_x_times_post$y),
+                         learn_x_pop = sample(learn_x_pop_post$x, n_sim, replace = TRUE, prob = learn_x_pop_post$y),
+                         learn_x_year = sample(learn_x_year_post$x, n_sim, replace = TRUE, prob = learn_x_year_post$y),
+                         n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
+                         constraint_a = sample(constraint_a_post$x, n_sim, replace = TRUE, prob = constraint_a_post$y),
+                         constraint_b = sample(constraint_b_post$x, n_sim, replace = TRUE, prob = constraint_b_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
                          improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
 
@@ -73,9 +85,15 @@ learn_probs <- seq(from = 0, to = 1, length.out = dim)
 priors <- do.call(rbind, lapply(1:dim, function(x){cbind(innov_prob = innov_probs[x], do.call(rbind, lapply(1:dim, function(x){cbind(learn_prob = learn_probs[x], sub_priors)})))}))
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, max_dist, constraint, improve_rate_m, improve_rate_sd){
+SpeedClimbingABM_slurm <- function(innov_prob, learn_prob,
+                                   innov_x_times, innov_x_pop, innov_x_year,
+                                   learn_x_times, learn_x_pop, learn_x_year,
+                                   n_top, max_dist, constraint_a, constraint_b, improve_rate_m, improve_rate_sd){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
-                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, n_top = n_top, max_dist = max_dist, constraint = constraint, 
+                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, 
+                           innov_x_times_post = innov_x_times_post, innov_x_pop_post = innov_x_pop_post, innov_x_year_post = innov_x_year_post,
+                           learn_x_times_post = learn_x_times_post, learn_x_pop_post = learn_x_pop_post, learn_x_year_post = learn_x_year_post,
+                           n_top = n_top, constraint_a = constraint_a, constraint_b = constraint_b, max_dist = 1.645,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = 0.4114153,
                            sum_stats = FALSE, plot = FALSE)
   temp[[length(n)]]

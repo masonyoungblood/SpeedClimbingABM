@@ -72,8 +72,8 @@ for(i in 1:rounds){
                          learn_x_pop = rnorm(n_sim, 0, 0.5),
                          learn_x_year = rnorm(n_sim, 0, 0.5),
                          n_top = runif(n_sim, 1, 28),
-                         constraint_a = rnorm(n_sim, 0, 3),
-                         constraint_b = rnorm(n_sim, 0, 3),
+                         constraint_a = rnorm(n_sim, 0, 1),
+                         constraint_b = rnorm(n_sim, 0, 1),
                          improve_rate_m = runif(n_sim, 1, 3),
                          improve_rate_sd = rexp(n_sim, 10))
   } else{
