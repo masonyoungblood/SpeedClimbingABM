@@ -76,7 +76,7 @@ for(i in 1:rounds){
                          constraint_b = rnorm(n_sim, 0, 1),
                          improve_rate_m = runif(n_sim, 1, 3),
                          improve_rate_sd = rexp(n_sim, 10),
-                         improve_min = truncnorm::rtruncnorm(n_xim, 0, 1, 0.5092764, 0.025))
+                         improve_min = truncnorm::rtruncnorm(n_sim, 0, 1, 0.5092764, 0.025))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
