@@ -44,7 +44,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, innov
                            learn_x_times = learn_x_times, learn_x_pop = learn_x_pop, learn_x_year = learn_x_year,
                            n_top = n_top, max_dist = 1.645, constraint_a = constraint_a, constraint_b = constraint_b,
                            improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, 
-                           improve_min = improve_min, sum_stats = FALSE, plot = FALSE)
+                           improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
   euclidean(obs_stats, temp)
 }
 
@@ -75,8 +75,7 @@ for(i in 1:rounds){
                          constraint_a = rnorm(n_sim, 0, 1),
                          constraint_b = rnorm(n_sim, 0, 1),
                          improve_rate_m = runif(n_sim, 1, 3),
-                         improve_rate_sd = rexp(n_sim, 10),
-                         improve_min = truncnorm::rtruncnorm(n_sim, 0, 1, 0.5092764, 0.025))
+                         improve_rate_sd = rexp(n_sim, 10))
   } else{
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
@@ -95,8 +94,7 @@ for(i in 1:rounds){
     constraint_b_post <- density(params$constraint_b[order(results)[1:(n_sim*tol)]], from = min(params$constraint_b[order(results)[1:(n_sim*tol)]]), to = max(params$constraint_b[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
     improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), to = max(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
     improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_sd[order(results)[1:(n_sim*tol)]]), to = max(params$improve_rate_sd[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-    improve_min_post <- density(params$improve_min[order(results)[1:(n_sim*tol)]], from = min(params$improve_min[order(results)[1:(n_sim*tol)]]), to = max(params$improve_min[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-    
+
     rm(list = c("params", "results"))
     
     #set new priors by sampling from posteriors
@@ -112,13 +110,12 @@ for(i in 1:rounds){
                          constraint_a = sample(constraint_a_post$x, n_sim, replace = TRUE, prob = constraint_a_post$y),
                          constraint_b = sample(constraint_b_post$x, n_sim, replace = TRUE, prob = constraint_b_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
-                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y),
-                         improve_min = sample(improve_min_post$x, n_sim, replace = TRUE, prob = improve_min_post$y))
+                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
     
     rm(list = c("innov_prob_post", "innov_x_times_post", "innov_x_pop_post", "innov_x_year_post",
                 "learn_prob_post", "learn_x_times_post", "learn_x_pop_post", "learn_x_year_post",
                 "n_top_post", "constraint_a", "constraint_b",
-                "improve_rate_m_post", "improve_rate_sd_post", "improve_min_post"))
+                "improve_rate_m_post", "improve_rate_sd_post"))
   }
   
   #run simulations
