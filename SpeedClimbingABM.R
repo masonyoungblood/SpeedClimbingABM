@@ -36,7 +36,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
                              learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, learn_x_year = 0,
                              innov_prob, max_dist, constraint_a = 0, constraint_b = 0, grid,
                              innov_x_times = 0, innov_x_pop = 0, innov_x_year = 0, 
-                             improve_rate_m, improve_rate_sd, improve_min, sd_multiplier = 0.5, 
+                             improve_rate_m, improve_rate_sd = 0, improve_min, sd_multiplier = 0.5, 
                              sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #handle output booleans
   if(raw){
@@ -66,7 +66,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
                                      ref_times = pop_data$time[which(pop_data$start == years[1])]/sum(beta),
                                      beta = lapply(1:n[1], function(x){beta}),
                                      seq_ratios = lapply(1:n[1], function(x){sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")]}),
-                                     ath_imp = lapply(1:n[1], function(x){bounded_exp(1:length(n), truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd), improve_min)}),
+                                     ath_imp = lapply(1:n[1], function(x){bounded_exp(1:length(n), ifelse(improve_rate_sd == 0, improve_rate_m, truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd)), improve_min)}),
                                      current_record = pop_data$time[which(pop_data$start == years[1])])
   
   #create output list
@@ -215,7 +215,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
                                            ref_times = pop_data$time[which(pop_data$start == years[i])]/sapply(1:length(climbers$beta[add_inds]), function(x){sum(climbers$beta[add_inds][[x]])}),
                                            beta = climbers$beta[add_inds],
                                            seq_ratios = climbers$seq_ratios[add_inds],
-                                           ath_imp = lapply(1:length(which(pop_data$start == years[i])), function(x){bounded_exp(1:length(n), truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd), improve_min)}),
+                                           ath_imp = lapply(1:length(which(pop_data$start == years[i])), function(x){bounded_exp(1:length(n), ifelse(improve_rate_sd == 0, improve_rate_m, truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd)), improve_min)}),
                                            current_record = pop_data$time[which(pop_data$start == years[i])])
     
     #scale athletic improvement of new climbers to keep them on same trajectory as old climbers
