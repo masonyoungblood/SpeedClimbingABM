@@ -33,7 +33,7 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 
 #function for the model
 SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, 
-                             learn_prob, n_top, learn_x_times = 0, learn_x_pop = 0, learn_x_year = 0,
+                             learn_prob, n_top = NULL, learn_x_times = 0, learn_x_pop = 0, learn_x_year = 0,
                              innov_prob, max_dist, constraint_a = 0, constraint_b = 0, grid,
                              innov_x_times = 0, innov_x_pop = 0, innov_x_year = 0, 
                              improve_rate_m, improve_rate_sd = 0, improve_min, sd_multiplier = 0.5, 
@@ -44,7 +44,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   }
   
   #round integer params
-  n_top <- round(n_top)
+  if(!is.null(n_top)){n_top <- round(n_top)}
 
   #colors for plotting after each timepoint
   colors <- rainbow((length(n)-1)*1.25) #times 1.2 so it doesn't loop back around
@@ -90,9 +90,10 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   
   #iterate over time
   for(i in 2:length(n)){
-    #get top n climbers for each climber to compare themselves with
-    top_climbers <- order(climbers$current_record)[1:n_top]
-    
+    #get climbers for each climber to compare themselves with
+    if(is.null(n_top)){top_climbers <- order(climbers$current_record)}
+    if(!is.null(n_top)){top_climbers <- order(climbers$current_record)[1:n_top]}
+
     #if needed, calculate the unique learn_prob and innov_prob for each old and new climber in this timestep
     t_scale <- scale(climbers$current_record)
     if(learn_bool){learn_prob_ind <- sapply(1:nrow(climbers), function(x){inv_logit(logit(learn_prob) + learn_x_times*t_scale[x] + learn_x_pop*n_scale[i] + learn_x_year*y_scale[i])})}
