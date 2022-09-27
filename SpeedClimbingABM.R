@@ -110,20 +110,17 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
       
       #if there are top climbers with different beta
       if(length(diff_top_climbers) > 0){
-        #sample one of them
-        sampled_climber <- sample(diff_top_climbers, 1)
-        
-        #get possible new time for climber k assuming the beta and seq_ratios of the top climbers with different beta
-        poss_new_time <- sum((climbers$ref_times[sampled_climber]*climbers$seq_ratios[[sampled_climber]]*climbers$ath_imp[[sampled_climber]][i])[climbers$beta[[sampled_climber]]])
+        #get possible new times for climber k assuming the beta and seq_ratios of the top climbers with different beta
+        poss_new_times <- sapply(diff_top_climbers, function(x){sum((climbers$ref_times[x]*climbers$seq_ratios[[x]]*climbers$ath_imp[[x]][i])[climbers$beta[[x]]])})
         
         #if the lowest possible new time is better than the current record, then replace the beta and seq_ratio of climber k with beta from best beta from top climbers
-        if(poss_new_time < climbers$current_record[k]){
-          climbers$beta[[k]] <- climbers$beta[[sampled_climber]]
-          climbers$seq_ratios[[k]] <- climbers$seq_ratios[[sampled_climber]]
+        if(min(poss_new_times) < climbers$current_record[k]){
+          climbers$beta[[k]] <- climbers$beta[[diff_top_climbers[which.min(poss_new_times)]]]
+          climbers$seq_ratios[[k]] <- climbers$seq_ratios[[diff_top_climbers[which.min(poss_new_times)]]]
           if(raw){act_learn <- act_learn + 1}
         }
         
-        rm(list = c("sampled_climber", "poss_new_time"))
+        rm(list = c("poss_new_times"))
       }
       
       rm(list = c("diff_top_climbers"))
