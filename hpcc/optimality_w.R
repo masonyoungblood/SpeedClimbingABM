@@ -38,8 +38,7 @@ params <- readRDS(paste0(temp, "/params.RDS"))
 results <- c(unlist(readRDS(paste0(temp, "/results_0.RDS"))),
              unlist(readRDS(paste0(temp, "/results_1.RDS"))), 
              unlist(readRDS(paste0(temp, "/results_2.RDS"))),
-             unlist(readRDS(paste0(temp, "/results_3.RDS"))), 
-             unlist(readRDS(paste0(temp, "/results_4.RDS"))))
+             unlist(readRDS(paste0(temp, "/results_3.RDS"))))
 rm(temp)
 
 #set number of simulations kept below tolerance level
@@ -98,7 +97,7 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob,
                            innov_x_times = innov_x_times, innov_x_pop = innov_x_pop, innov_x_year = innov_x_year,
                            learn_x_times = learn_x_times, learn_x_pop = learn_x_pop, learn_x_year = learn_x_year,
                            n_top = n_top, constraint_a = constraint_a, constraint_b = constraint_b, max_dist = 1.645,
-                           improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = 0.4114153,
+                           improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = 0.3527184,
                            sum_stats = FALSE, plot = FALSE)
   temp[[length(n)]]
 }
@@ -108,5 +107,5 @@ pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse
 
 #run simulations
 slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "opt_w",
-                             nodes = 5, cpus_per_node = 48, pkgs = pkgs,
+                             nodes = 4, cpus_per_node = 48, pkgs = pkgs,
                              global_objects = objects(), slurm_options = list(mem = 0))

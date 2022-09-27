@@ -76,6 +76,12 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   if(sum_stats){output[[1]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
   if(!sum_stats & !raw){output[[1]] <- sort(climbers$current_record)}
   
+  #if raw output is stored, also create counter for actualized learning and innovation rate
+  if(raw){
+    act_learn <- 0
+    act_innov <- 0
+  }
+  
   #initialize plot
   if(plot){
     par(mar = c(4, 4, 1, 1))
@@ -110,6 +116,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
         if(min(poss_new_times) < climbers$current_record[k]){
           climbers$beta[[k]] <- climbers$beta[[diff_top_climbers[which.min(poss_new_times)]]]
           climbers$seq_ratios[[k]] <- climbers$seq_ratios[[diff_top_climbers[which.min(poss_new_times)]]]
+          if(raw){act_learn <- act_learn + 1}
         }
         
         rm(list = c("poss_new_times"))
@@ -160,6 +167,8 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
           
           #if there is anything left
           if(ok_length > 0){
+            if(raw){act_innov <- act_innov + 1}
+            
             #if there's only one
             if(ok_length == 1){
               #go ahead and flip it
@@ -238,5 +247,5 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   #return output
   if(sum_stats){return(do.call(rbind, output))}
   if(!sum_stats & !raw){return(output)}
-  if(raw){return(climbers)}
+  if(raw){return(list(climbers, act_learn = act_learn, act_innov = act_innov))}
 }
