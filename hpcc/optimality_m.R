@@ -55,7 +55,6 @@ n_top_post <- density(params$n_top[order(results)[1:tol]], from = min(params$n_t
 constraint_a_post <- density(params$constraint_a[order(results)[1:tol]], from = min(params$constraint_a[order(results)[1:tol]]), to = max(params$constraint_a[order(results)[1:tol]]), n = 2^12, bw = "SJ")
 constraint_b_post <- density(params$constraint_b[order(results)[1:tol]], from = min(params$constraint_b[order(results)[1:tol]]), to = max(params$constraint_b[order(results)[1:tol]]), n = 2^12, bw = "SJ")
 improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:tol]], from = min(params$improve_rate_m[order(results)[1:tol]]), to = max(params$improve_rate_m[order(results)[1:tol]]), n = 2^12, bw = "SJ")
-improve_rate_sd_post <- density(params$improve_rate_sd[order(results)[1:tol]], from = min(params$improve_rate_sd[order(results)[1:tol]]), to = max(params$improve_rate_sd[order(results)[1:tol]]), n = 2^12, bw = "SJ")
 
 #store number of simulations per pixel
 n_sim <- 200
@@ -73,8 +72,7 @@ sub_priors <- data.frame(innov_x_times = sample(innov_x_times_post$x, n_sim, rep
                          n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
                          constraint_a = sample(constraint_a_post$x, n_sim, replace = TRUE, prob = constraint_a_post$y),
                          constraint_b = sample(constraint_b_post$x, n_sim, replace = TRUE, prob = constraint_b_post$y),
-                         improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
-                         improve_rate_sd = sample(improve_rate_sd_post$x, n_sim, replace = TRUE, prob = improve_rate_sd_post$y))
+                         improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y))
 
 #generate innovation and learning values, replacing 0 and 1 to avoid NAs in prob vector error
 innov_probs <- seq(from = 0, to = 1, length.out = dim)
@@ -91,13 +89,13 @@ priors <- do.call(rbind, lapply(1:dim, function(x){cbind(innov_prob = innov_prob
 SpeedClimbingABM_slurm <- function(innov_prob, learn_prob,
                                    innov_x_times, innov_x_pop, innov_x_year,
                                    learn_x_times, learn_x_pop, learn_x_year,
-                                   n_top, constraint_a, constraint_b, improve_rate_m, improve_rate_sd){
+                                   n_top, constraint_a, constraint_b, improve_rate_m){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob, 
                            innov_x_times = innov_x_times, innov_x_pop = innov_x_pop, innov_x_year = innov_x_year,
                            learn_x_times = learn_x_times, learn_x_pop = learn_x_pop, learn_x_year = learn_x_year,
                            n_top = n_top, constraint_a = constraint_a, constraint_b = constraint_b, max_dist = 1.645,
-                           improve_rate_m = improve_rate_m, improve_rate_sd = improve_rate_sd, improve_min = 0.3427374,
+                           improve_rate_m = improve_rate_m, improve_min = 0.3427374,
                            sum_stats = FALSE, plot = FALSE)
   temp[[length(n)]]
 }
