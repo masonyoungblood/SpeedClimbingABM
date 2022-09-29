@@ -12,21 +12,24 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # n_holds <- 20
 # beta_true_prob <- 1
 # innov_prob <- 0.2
-# innov_x_times <- 0
-# innov_x_pop <- 0
+# innov_x_times <- 1
+# innov_x_pop <- 1
+# innov_x_year <- 1
 # learn_prob <- 0.2
-# learn_x_times <- 0
-# learn_x_pop <- 0
-# n_top <- 10
+# learn_x_times <- 1
+# learn_x_pop <- 1
+# learn_x_year <- 1
+# n_top <- 0.99
 # max_dist <- 2
 # constraint_a <- 1
 # constraint_b <- 1
 # improve_rate_m <- 2
-# improve_rate_sd <- 0.5
+# improve_rate_sd <- 0
 # improve_min <- 0.8
 # sd_multiplier <- 0.5
 # sum_stats <- TRUE
-# plot <- TRUE
+# plot <- FALSE
+# raw <- FALSE
 # bw <- 1
 # ylim <- 0.3
 # quant_by <- 0.2
@@ -44,8 +47,11 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   }
   
   #create appropriate vectors depending on whether n_top is numeric or proportion
-  if(n_top > 1){n_top <- rep(round(n_top), length(n))}
-  if(n_top <= 1){n_top <- round(n*n_top)}
+  if(n_top > 1){
+    n_top <- rep(round(n_top), length(n))
+  } else{
+    n_top <- round(n*n_top)
+  }
   
   #colors for plotting after each timepoint
   colors <- rainbow((length(n)-1)*1.25) #times 1.2 so it doesn't loop back around
@@ -92,7 +98,7 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   #iterate over time
   for(i in 2:length(n)){
     #get climbers for each climber to compare themselves with
-    top_climbers <- order(climbers$current_record)[1:(n_top[i])]
+    top_climbers <- order(climbers$current_record)[1:(n_top[i-1])]
 
     #if needed, calculate the unique learn_prob and innov_prob for each old and new climber in this timestep
     t_scale <- scale(climbers$current_record)

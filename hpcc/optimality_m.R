@@ -32,7 +32,7 @@ years <- sort(unique(data$year))
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 
 #load main simulation data
-n_m <- 500
+n_m <- 250
 temp <- paste0("simulations_m/_rslurm_", n_m)
 params <- readRDS(paste0(temp, "/params.RDS"))
 results <- c(unlist(readRDS(paste0(temp, "/results_0.RDS"))),
