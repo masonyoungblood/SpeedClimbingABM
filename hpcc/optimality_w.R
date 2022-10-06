@@ -32,13 +32,10 @@ years <- sort(unique(data$year))
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 
 #load main simulation data
-n_w <- 250
-temp <- paste0("simulations_w/_rslurm_", n_w)
+temp <- paste0("simulations_w/_rslurm_", 250)
 params <- readRDS(paste0(temp, "/params.RDS"))
 results <- c(unlist(readRDS(paste0(temp, "/results_0.RDS"))),
-             unlist(readRDS(paste0(temp, "/results_1.RDS"))), 
-             unlist(readRDS(paste0(temp, "/results_2.RDS"))),
-             unlist(readRDS(paste0(temp, "/results_3.RDS"))))
+             unlist(readRDS(paste0(temp, "/results_1.RDS"))))
 rm(temp)
 
 #set number of simulations kept below tolerance level
@@ -57,7 +54,7 @@ constraint_b_post <- density(params$constraint_b[order(results)[1:tol]], from = 
 improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:tol]], from = min(params$improve_rate_m[order(results)[1:tol]]), to = max(params$improve_rate_m[order(results)[1:tol]]), n = 2^12, bw = "SJ")
 
 #store number of simulations per pixel
-n_sim <- 200
+n_sim <- 1000
 
 #store dimension of matrix to explore
 dim <- 50
@@ -96,8 +93,8 @@ SpeedClimbingABM_slurm <- function(innov_prob, learn_prob,
                            learn_x_times = learn_x_times, learn_x_pop = learn_x_pop, learn_x_year = learn_x_year,
                            n_top = n_top, constraint_a = constraint_a, constraint_b = constraint_b, max_dist = 1.645,
                            improve_rate_m = improve_rate_m, improve_min = 0.3527184,
-                           sum_stats = FALSE, plot = FALSE)
-  temp[[length(n)]]
+                           sum_stats = FALSE, raw = TRUE, plot = FALSE)
+  return(list(min = min(temp[[1]]$current_record), median = median(temp[[1]]$current_record), seq_freq = sort(as.numeric(table(sapply(1:length(temp[[1]]$beta), function(x){paste0(which(temp[[1]]$beta[[x]]), collapse = " ")}))), decreasing = TRUE)))
 }
 
 #store required packages
@@ -105,5 +102,5 @@ pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse
 
 #run simulations
 slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "opt_w",
-                             nodes = 4, cpus_per_node = 48, pkgs = pkgs,
+                             nodes = 3, cpus_per_node = 48, pkgs = pkgs,
                              global_objects = objects(), slurm_options = list(mem = 0))
