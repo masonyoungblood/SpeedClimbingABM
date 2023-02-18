@@ -40,13 +40,15 @@ obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 set.seed(12345)
 obs_stats <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                               beta_true_prob = 1, innov_prob = 0.2, learn_prob = 0.2,
+                              innov_x_year = -1, learn_x_year = -1,
                               n_top = 0.2, max_dist = 1.645, improve_rate_m = 2, constraint_b = 0.5,
                               improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, improve_rate_m, constraint_b){
+SpeedClimbingABM_slurm <- function(innov_prob, innov_x_year, learn_prob, learn_x_year, n_top, improve_rate_m, constraint_b){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob,
+                           innov_x_year = innov_x_year, learn_x_year = learn_x_year,
                            n_top = n_top, max_dist = 1.645, improve_rate_m = improve_rate_m, 
                            constraint_b = constraint_b, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
   euclidean(obs_stats, temp)
@@ -68,7 +70,9 @@ for(i in 1:rounds){
   if(i == 1){
     #set priors
     priors <- data.frame(innov_prob = rbeta(n_sim, 1, 3),
+                         innov_x_year = rnorm(n_sim, 0, 0.5),
                          learn_prob = rbeta(n_sim, 1, 3),
+                         learn_x_year = rnorm(n_sim, 0, 0.5),
                          n_top = rbeta(n_sim, 1, 2),
                          improve_rate_m = runif(n_sim, 1, 3),
                          constraint_b = rexp(n_sim, 2))
@@ -78,7 +82,9 @@ for(i in 1:rounds){
     
     #get posteriors for each parameter for prior sampling
     innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob[order(results)[1:(n_sim*tol)]]), to = max(params$innov_prob[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
+    innov_x_year_post <- density(params$innov_x_year[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_year[order(results)[1:(n_sim*tol)]]), to = max(params$innov_x_year[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
     learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob[order(results)[1:(n_sim*tol)]]), to = max(params$learn_prob[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
+    learn_x_year_post <- density(params$learn_x_year[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_year[order(results)[1:(n_sim*tol)]]), to = max(params$learn_x_year[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
     n_top_post <- density(params$n_top[order(results)[1:(n_sim*tol)]], from = min(params$n_top[order(results)[1:(n_sim*tol)]]), to = max(params$n_top[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
     improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), to = max(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
     constraint_b_post <- density(params$constraint_b[order(results)[1:(n_sim*tol)]], from = min(params$constraint_b[order(results)[1:(n_sim*tol)]]), to = max(params$constraint_b[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
@@ -87,12 +93,15 @@ for(i in 1:rounds){
     
     #set new priors by sampling from posteriors
     priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
+                         innov_x_year = sample(innov_x_year_post$x, n_sim, replace = TRUE, prob = innov_x_year_post$y),
                          learn_prob = sample(learn_prob_post$x, n_sim, replace = TRUE, prob = learn_prob_post$y),
+                         learn_x_year = sample(learn_x_year_post$x, n_sim, replace = TRUE, prob = learn_x_year_post$y),
                          n_top = sample(n_top_post$x, n_sim, replace = TRUE, prob = n_top_post$y),
                          improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y),
                          constraint_b = sample(constraint_b_post$x, n_sim, replace = TRUE, prob = constraint_b_post$y))
     
-    rm(list = c("innov_prob_post", "learn_prob_post", "n_top", "improve_rate_m_post", "constraint_b"))
+    rm(list = c("innov_prob_post", "innov_x_year_post", "learn_prob_post", "learn_x_year_post", 
+                "n_top", "improve_rate_m_post", "constraint_b"))
   }
   
   #run simulations
