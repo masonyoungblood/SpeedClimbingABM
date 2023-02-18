@@ -44,7 +44,7 @@ obs_stats <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = 
                               improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, constraint_b, improve_rate_m){
+SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, n_top, improve_rate_m){
   temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                            beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob,
                            n_top = n_top, max_dist = 1.645, improve_rate_m = improve_rate_m, 
