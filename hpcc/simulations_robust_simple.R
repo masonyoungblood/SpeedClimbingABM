@@ -5,8 +5,12 @@ grid <- read.csv("grid.csv")/1000
 source("SpeedClimbingABM.R")
 
 #euclidean distance function
-euclidean <- function(obs_stats, sum_stats){
-  return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))*(x/length(obs_stats))})))
+euclidean <- function(obs_stats, sum_stats, weighted = FALSE){
+  if(weighted){
+    return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))*(x/length(obs_stats))})))
+  } else{
+    return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))})))
+  }
 }
 
 #subset data by gender
