@@ -36,6 +36,15 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 #get observed summary statistics
 obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 
+#number of simulations per round
+n_sim <- 10000000
+
+#tolerance level per round
+tol <- 0.001
+
+#number of rounds
+rounds <- 1
+
 #set priors
 priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
                      innov_x_times = rnorm(n_sim, 0, 0.5),
@@ -87,15 +96,6 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, innov
 
 #store required packages
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
-
-#number of simulations per round
-n_sim <- 10000000
-
-#tolerance level per round
-tol <- 0.001
-
-#number of rounds
-rounds <- 1
 
 for(i in 1:rounds){
   if(i > 1){
