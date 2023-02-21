@@ -6,7 +6,7 @@ source("SpeedClimbingABM.R")
 
 #euclidean distance function
 euclidean <- function(obs_stats, sum_stats){
-  return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))*(x/length(obs_stats))})))
+  return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))})))
 }
 
 #subset data by gender
@@ -36,14 +36,43 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 #get observed summary statistics
 obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
 
+#set priors
+priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
+                     innov_x_times = rnorm(n_sim, 0, 0.5),
+                     innov_x_pop = rnorm(n_sim, 0, 0.5),
+                     innov_x_year = rnorm(n_sim, 0, 0.5),
+                     learn_prob = rbeta(n_sim, 1, 2),
+                     learn_x_times = rnorm(n_sim, 0, 0.5),
+                     learn_x_pop = rnorm(n_sim, 0, 0.5),
+                     learn_x_year = rnorm(n_sim, 0, 0.5),
+                     n_top = runif(n_sim, 0, 1),
+                     constraint_a = rnorm(n_sim, 0, 1),
+                     constraint_b = rnorm(n_sim, 0, 1),
+                     improve_rate_m = runif(n_sim, 0, 5))
+
+#sample and save known values
+set.seed(1234)
+known <- data.frame(innov_prob = rbeta(1, 1, 2),
+                     innov_x_times = rnorm(1, 0, 0.5),
+                     innov_x_pop = rnorm(1, 0, 0.5),
+                     innov_x_year = rnorm(1, 0, 0.5),
+                     learn_prob = rbeta(1, 1, 2),
+                     learn_x_times = rnorm(1, 0, 0.5),
+                     learn_x_pop = rnorm(1, 0, 0.5),
+                     learn_x_year = rnorm(1, 0, 0.5),
+                     n_top = runif(1, 0, 1),
+                     constraint_a = rnorm(1, 0, 1),
+                     constraint_b = rnorm(1, 0, 1),
+                     improve_rate_m = runif(1, 0, 5))
+save(known, file = "known.RData")
+
 #get simulated data from known parameter values
-set.seed(12345)
 obs_stats <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
-                              beta_true_prob = 1, innov_prob = 0.3, learn_prob = 0.3,
-                              innov_x_times = 0.5, innov_x_pop = -0.5, innov_x_year = -0.5,
-                              learn_x_times = 0.5, learn_x_pop = -0.5, learn_x_year = -0.5,
-                              n_top = 0.3, max_dist = 1.645, constraint_a = -0.5, constraint_b = 0.5,
-                              improve_rate_m = 2, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
+                              beta_true_prob = 1, innov_prob = known$innov_prob, learn_prob = known$learn_prob,
+                              innov_x_times = known$innov_x_times, innov_x_pop = known$innov_x_pop, innov_x_year = known$innov_x_year,
+                              learn_x_times = known$learn_x_times, learn_x_pop = known$learn_x_pop, learn_x_year = known$learn_x_year,
+                              n_top = known$n_top, max_dist = 1.645, constraint_a = known$constraint_a, constraint_b = known$constraint_b,
+                              improve_rate_m = known$improve_rate_m, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
 SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, innov_x_year, learn_prob, learn_x_times, learn_x_pop, learn_x_year, n_top, constraint_a, constraint_b, improve_rate_m){
@@ -60,30 +89,16 @@ SpeedClimbingABM_slurm <- function(innov_prob, innov_x_times, innov_x_pop, innov
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
 #number of simulations per round
-n_sim <- 2000
+n_sim <- 10000000
 
 #tolerance level per round
-tol <- 0.5
+tol <- 0.001
 
 #number of rounds
-rounds <- 250
+rounds <- 1
 
 for(i in 1:rounds){
-  if(i == 1){
-    #set priors
-    priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
-                         innov_x_times = rnorm(n_sim, 0, 0.5),
-                         innov_x_pop = rnorm(n_sim, 0, 0.5),
-                         innov_x_year = rnorm(n_sim, 0, 0.5),
-                         learn_prob = rbeta(n_sim, 1, 2),
-                         learn_x_times = rnorm(n_sim, 0, 0.5),
-                         learn_x_pop = rnorm(n_sim, 0, 0.5),
-                         learn_x_year = rnorm(n_sim, 0, 0.5),
-                         n_top = runif(n_sim, 0, 1),
-                         constraint_a = rnorm(n_sim, 0, 1),
-                         constraint_b = rnorm(n_sim, 0, 1),
-                         improve_rate_m = runif(n_sim, 1, 3))
-  } else{
+  if(i > 1){
     #load parameters from previous round
     params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
     
@@ -124,7 +139,7 @@ for(i in 1:rounds){
   
   #run simulations
   slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = as.character(i),
-                               nodes = 4, cpus_per_node = 48, pkgs = pkgs,
+                               nodes = 4, cpus_per_node = 45, pkgs = pkgs,
                                global_objects = objects(), slurm_options = list(mem = 0))
   
   #get simulation output
