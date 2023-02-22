@@ -33,9 +33,6 @@ years <- sort(unique(data$year))
 #get population sizes
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 
-#get observed summary statistics
-obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
-
 #number of simulations per round
 n_sim <- 10000000
 
@@ -57,10 +54,10 @@ priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
                      n_top = runif(n_sim, 0, 1),
                      constraint_a = rnorm(n_sim, 0, 1),
                      constraint_b = rnorm(n_sim, 0, 1),
-                     improve_rate_m = runif(n_sim, 0, 5))
+                     improve_rate_m = runif(n_sim, 1, 5))
 
 #sample and save known values
-set.seed(1234)
+set.seed(123)
 known <- data.frame(innov_prob = rbeta(1, 1, 2),
                      innov_x_times = rnorm(1, 0, 0.5),
                      innov_x_pop = rnorm(1, 0, 0.5),
@@ -72,7 +69,7 @@ known <- data.frame(innov_prob = rbeta(1, 1, 2),
                      n_top = runif(1, 0, 1),
                      constraint_a = rnorm(1, 0, 1),
                      constraint_b = rnorm(1, 0, 1),
-                     improve_rate_m = runif(1, 0, 5))
+                     improve_rate_m = runif(1, 1, 5))
 save(known, file = "known.RData")
 
 #get simulated data from known parameter values
