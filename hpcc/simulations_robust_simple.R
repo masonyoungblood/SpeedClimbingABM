@@ -4,11 +4,6 @@ load("data.RData")
 grid <- read.csv("grid.csv")/1000
 source("SpeedClimbingABM.R")
 
-#euclidean distance function
-euclidean <- function(obs_stats, sum_stats){
-  return(sum(sapply(2:length(obs_stats), function(x){sqrt(sum((obs_stats[[x]]-sum_stats[[x]])^2))})))
-}
-
 #subset data by gender
 data <- data[which(data$gender == "M"), ]
 
@@ -33,79 +28,28 @@ years <- sort(unique(data$year))
 #get population sizes
 n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == years[x]), ])}))
 
-#get observed summary statistics
-obs_stats <- lapply(years, function(x){sort(data$time[which(data$year == x)])})
+#number of simulations per round
+n_sim <- 10000000
 
-#get simulated data from known parameter values
-set.seed(12345)
-obs_stats <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
-                              beta_true_prob = 1, innov_prob = 0.2, learn_prob = 0.3,
-                              n_top = 0.2, max_dist = 1.645, improve_rate_m = 2,
-                              improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
+#set priors
+priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
+                     learn_prob = rbeta(n_sim, 1, 2),
+                     constraint_b = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 1),
+                     improve_rate_m = runif(n_sim, 1, 3))
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, innov_x_year, learn_x_year, improve_rate_m){
-  temp <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
-                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob,
-                           innov_x_year = innov_x_year, learn_x_year = learn_x_year,
-                           n_top = 0.2, max_dist = 1.645, improve_rate_m = improve_rate_m,
-                           improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
-  euclidean(obs_stats, temp)
+SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, constraint_b, improve_rate_m){
+  unlist(SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
+                          beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob,
+                          n_top = 0.1, max_dist = 1.645, constraint_b = constraint_b,
+                          improve_rate_m = improve_rate_m, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE))
 }
 
 #store required packages
 pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse("SpeedClimbingABM.R"))$token == "SYMBOL_PACKAGE"])
 
-#number of simulations per round
-n_sim <- 10000000
-
-#tolerance level per round
-tol <- 0.0001
-
-#number of rounds
-rounds <- 1
-
-for(i in 1:rounds){
-  if(i == 1){
-    #set priors
-    priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
-                         learn_prob = rbeta(n_sim, 1, 2),
-                         innov_x_year = rnorm(n_sim, 0, 1),
-                         learn_x_year = rnorm(n_sim, 0, 1),
-                         improve_rate_m = runif(n_sim, 1, 3))
-  } else{
-    #load parameters from previous round
-    params <- readRDS(paste0("_rslurm_", i-1, "/params.RDS"))
-    
-    #get posteriors for each parameter for prior sampling
-    innov_prob_post <- density(params$innov_prob[order(results)[1:(n_sim*tol)]], from = min(params$innov_prob[order(results)[1:(n_sim*tol)]]), to = max(params$innov_prob[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-    learn_prob_post <- density(params$learn_prob[order(results)[1:(n_sim*tol)]], from = min(params$learn_prob[order(results)[1:(n_sim*tol)]]), to = max(params$learn_prob[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-    innov_x_year_post <- density(params$innov_x_year[order(results)[1:(n_sim*tol)]], from = min(params$innov_x_year[order(results)[1:(n_sim*tol)]]), to = max(params$innov_x_year[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-    learn_x_year_post <- density(params$learn_x_year[order(results)[1:(n_sim*tol)]], from = min(params$learn_x_year[order(results)[1:(n_sim*tol)]]), to = max(params$learn_x_year[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-    improve_rate_m_post <- density(params$improve_rate_m[order(results)[1:(n_sim*tol)]], from = min(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), to = max(params$improve_rate_m[order(results)[1:(n_sim*tol)]]), n = 2^12, bw = "SJ")
-
-    rm(list = c("params", "results"))
-    
-    #set new priors by sampling from posteriors
-    priors <- data.frame(innov_prob = sample(innov_prob_post$x, n_sim, replace = TRUE, prob = innov_prob_post$y),
-                         learn_prob = sample(learn_prob_post$x, n_sim, replace = TRUE, prob = learn_prob_post$y),
-                         innov_x_year = sample(innov_x_year_post$x, n_sim, replace = TRUE, prob = innov_x_year_post$y),
-                         learn_x_year = sample(learn_x_year_post$x, n_sim, replace = TRUE, prob = learn_x_year_post$y),
-                         improve_rate_m = sample(improve_rate_m_post$x, n_sim, replace = TRUE, prob = improve_rate_m_post$y))
-    
-    rm(list = c("innov_prob_post", "learn_prob_post",
-                "innov_x_year_post", "learn_x_year_post",
-                "improve_rate_m_post"))
-  }
+#run simulations
+slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = as.character(i),
+                             nodes = 4, cpus_per_node = 45, pkgs = pkgs,
+                             global_objects = objects(), slurm_options = list(mem = 0))
   
-  #run simulations
-  slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = as.character(i),
-                               nodes = 4, cpus_per_node = 45, pkgs = pkgs,
-                               global_objects = objects(), slurm_options = list(mem = 0))
-  
-  #get simulation output
-  results <- rslurm::get_slurm_out(slurm)
-  results <- unlist(results)
-  
-  rm(list = c("priors", "slurm"))
-}
