@@ -37,10 +37,10 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 params <- readRDS("_rslurm_simulations_robust/params.RDS")
 
 #load results and combine
-results_0 <- readRDS(paste0("_rslurm_", i, "/results_0.RDS"))
-results_1 <- readRDS(paste0("_rslurm_", i, "/results_1.RDS"))
-results_2 <- readRDS(paste0("_rslurm_", i, "/results_2.RDS"))
-results_3 <- readRDS(paste0("_rslurm_", i, "/results_3.RDS"))
+results_0 <- readRDS(paste0("_rslurm_simulations_robust/results_0.RDS"))
+results_1 <- readRDS(paste0("_rslurm_simulations_robust/results_1.RDS"))
+results_2 <- readRDS(paste0("_rslurm_simulations_robust/results_2.RDS"))
+results_3 <- readRDS(paste0("_rslurm_simulations_robust/results_3.RDS"))
 results <- c(unlist(results_0), unlist(results_1), unlist(results_2), unlist(results_3))
 rm(list = c("results_0", "results_1", "results_2", "results_3"))
 
