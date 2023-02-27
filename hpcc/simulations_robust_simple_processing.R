@@ -36,37 +36,22 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 #load parameters
 params <- readRDS("_rslurm_robust_simple/params.RDS")
 
-#load results and combine
-results_0 <- readRDS(paste0("_rslurm_robust_simple/results_0.RDS"))
-results_1 <- readRDS(paste0("_rslurm_robust_simple/results_1.RDS"))
-results_2 <- readRDS(paste0("_rslurm_robust_simple/results_2.RDS"))
-results_3 <- readRDS(paste0("_rslurm_robust_simple/results_3.RDS"))
-results <- c(unlist(results_0), unlist(results_1), unlist(results_2), unlist(results_3))
-rm(list = c("results_0", "results_1", "results_2", "results_3"))
-
-#get known parameters
-set.seed(12345)
-known <- params[sample(nrow(params), 1), ]
-
 #get simulated data from known parameter values
-obs_stats <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
-                              beta_true_prob = 1, innov_prob = known$innov_prob, learn_prob = known$learn_prob,
-                              n_top = 0.1, max_dist = 1.645, constraint_b = known$constraint_b,
-                              improve_rate_m = known$improve_rate_m, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
+obs_stats <- unlist(SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
+                                     beta_true_prob = 1, innov_prob = 0.2, learn_prob = 0.3,
+                                     n_top = 0.1, max_dist = 1.645, constraint_b = 1,
+                                     improve_rate_m = 2, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE))
 
-#split up into allocations to preserve memory
-n_split <- 10
-allocations <- split(1:length(results), ceiling(seq_along(1:length(results))/(length(results)/n_split)))
-
-#iterate through the allocations to preserve memory
-for(i in 1:n_split){
-  temp <- unlist(lapply(allocations[[i]], function(x){c(dist(rbind(unlist(obs_stats), results[[x]])))}))
-  assign(paste0("dists_", i), temp)
-  save(temp, file = paste0("output/dists_", i, ".RData"))
-  rm(temp)
+#iterate through individual files to preserve memory
+for(i in 1:4){
+  temp_results <- readRDS(paste0("_rslurm_robust_simple/results_", i-1, ".RDS"))
+  temp_dists <- unlist(lapply(1:length(temp_results), function(x){c(dist(rbind(obs_stats, temp_results[[x]])))}))
+  assign(paste0("dists_", i), temp_dists)
+  save(temp_dists, file = paste0("output/dists_", i, ".RData"))
+  rm(list = c("temp_results", "temp_dists"))
   gc()
 }
 
 #combine and save output
-output <- list(params, known, dists = c(dists_1, dists_2, dists_3, dists_4, dists_5, dists_6, dists_7, dists_8, dists_9, dists_10))
+output <- list(params, dists = c(dists_1, dists_2, dists_3, dists_4))
 save(output, file = "output/output.RData")
