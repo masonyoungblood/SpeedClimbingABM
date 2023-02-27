@@ -54,9 +54,16 @@ obs_stats <- SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = 
                               n_top = 0.1, max_dist = 1.645, constraint_b = known$constraint_b,
                               improve_rate_m = known$improve_rate_m, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE)
 
-#calculate distances
-dists <- unlist(parallel::mclapply(1:length(results), function(x){euclidean(unlist(obs_stats), results[[x]])}, mc.cores = 40))
+#split up into allocations to preserve memory
+n_split <- 4
+allocations <- split(1:length(results), ceiling(seq_along(1:length(results))/(length(results)/n_split)))
+
+#run distances across the allocations
+dists_1 <- unlist(parallel::mclapply(allocations[[1]], function(x){c(dist(rbind(unlist(obs_stats), results[[x]])))}, mc.cores = 40))
+dists_2 <- unlist(parallel::mclapply(allocations[[2]], function(x){c(dist(rbind(unlist(obs_stats), results[[x]])))}, mc.cores = 40))
+dists_3 <- unlist(parallel::mclapply(allocations[[3]], function(x){c(dist(rbind(unlist(obs_stats), results[[x]])))}, mc.cores = 40))
+dists_4 <- unlist(parallel::mclapply(allocations[[4]], function(x){c(dist(rbind(unlist(obs_stats), results[[x]])))}, mc.cores = 40))
 
 #combine and save output
-output <- list(params, known, dists)
+output <- list(params, known, dists = c(dists_1, dists_2, dists_3, dists_4))
 save(output, file = "output.RData")
