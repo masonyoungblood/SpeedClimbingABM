@@ -32,17 +32,16 @@ n <- unlist(lapply(1:length(years), function(x){nrow(data[which(data$year == yea
 n_sim <- 10000000
 
 #set priors
-priors <- data.frame(innov_prob = rbeta(n_sim, 1, 2),
-                     learn_prob = rbeta(n_sim, 1, 2),
-                     constraint_b = truncnorm::rtruncnorm(n_sim, a = 0, mean = 0, sd = 1),
-                     improve_rate_m = runif(n_sim, 1, 3))
+priors <- data.frame(innov_prob = runif(n_sim, 0, 0.5),
+                     learn_prob = runif(n_sim, 0, 0.5),
+                     improve_rate_m = runif(n_sim, 1.2, 2.2))
 
 #wrap SpeedClimbingABM in a simpler function for slurm, that outputs the sum of the euclidean distances between the distributions in each timepoint
-SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, constraint_b, improve_rate_m){
+SpeedClimbingABM_slurm <- function(innov_prob, learn_prob, improve_rate_m){
   unlist(SpeedClimbingABM(n = n, years = years, pop_data = pop_data, grid = grid, n_holds = 20,
                           beta_true_prob = 1, innov_prob = innov_prob, learn_prob = learn_prob,
-                          n_top = 0.1, max_dist = 1.645, constraint_b = constraint_b,
-                          improve_rate_m = improve_rate_m, improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE))
+                          n_top = 0.1, max_dist = 1.645, improve_rate_m = improve_rate_m, 
+                          improve_min = 0.3427374, sum_stats = FALSE, plot = FALSE))
 }
 
 #store required packages
@@ -52,4 +51,3 @@ pkgs <- unique(getParseData(parse("SpeedClimbingABM.R"))$text[getParseData(parse
 slurm <- rslurm::slurm_apply(SpeedClimbingABM_slurm, priors, jobname = "robust_simple",
                              nodes = 4, cpus_per_node = 45, pkgs = pkgs,
                              global_objects = objects(), slurm_options = list(mem = 0))
-  
