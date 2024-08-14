@@ -24,7 +24,6 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # constraint_a <- 1
 # constraint_b <- 1
 # improve_rate_m <- 2
-# improve_rate_sd <- 0
 # improve_min <- 0.8
 # sd_multiplier <- 0.5
 # sum_stats <- TRUE
@@ -34,12 +33,15 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # ylim <- 0.3
 # quant_by <- 0.2
 
+#improve_min_m: (median(data$time[which(data$gender == "M" & data$year == 2019)])/15)/(median(data$time[which(data$gender == "M" & data$year == 2007)])/20)
+#improve_min_w: (median(data$time[which(data$gender == "M" & data$year == 2019)])/15)/(median(data$time[which(data$gender == "M" & data$year == 2007)])/20)
+
 #function for the model
 SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, 
                              learn_prob, n_top = 10, learn_x_times = 0, learn_x_pop = 0, learn_x_year = 0,
-                             innov_prob, max_dist, constraint_a = 0, constraint_b = 0, grid,
+                             innov_prob, max_dist = 1.645, constraint_a = 0, constraint_b = 0, grid,
                              innov_x_times = 0, innov_x_pop = 0, innov_x_year = 0, 
-                             improve_rate_m, improve_rate_sd = 0, improve_min, sd_multiplier = 0.5, 
+                             improve_rate_m, improve_rate_w, improve_min_m = 0.3427374, improve_min_w = 0.3527184, sd_multiplier = 0.5, 
                              sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #handle output booleans
   if(raw){
@@ -70,11 +72,13 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   
   #initialize data table of agents
   climbers <- data.table::data.table(ID = pop_data$ID[which(pop_data$start == years[1])],
+                                     gender = pop_data$gender[which(pop_data$start == years[1])],
                                      ref_times = pop_data$time[which(pop_data$start == years[1])]/sum(beta),
                                      beta = lapply(1:n[1], function(x){beta}),
                                      seq_ratios = lapply(1:n[1], function(x){sort(truncnorm::rtruncnorm(n_holds, a = 0, mean = 1, sd = sd_multiplier))[rank(dists, ties.method = "first")]}),
-                                     ath_imp = lapply(1:n[1], function(x){bounded_exp(1:length(n), ifelse(improve_rate_sd == 0, improve_rate_m, truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd)), improve_min)}),
+                                     ath_imp = NULL,
                                      current_record = pop_data$time[which(pop_data$start == years[1])])
+  climbers$ath_imp <- lapply(1:n[1], function(x){bounded_exp(1:length(n), ifelse(climbers$gender[x] == "M", improve_rate_m, improve_rate_w), ifelse(climbers$gender[x] == "M", improve_min_m, improve_min_w))})
   
   #create output list
   output <- list()
@@ -219,11 +223,13 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
     
     #generate data table of new climbers
     new_climbers <- data.table::data.table(ID = pop_data$ID[which(pop_data$start == years[i])],
+                                           gender = pop_data$gender[which(pop_data$start == years[i])],
                                            ref_times = pop_data$time[which(pop_data$start == years[i])]/sapply(1:length(climbers$beta[add_inds]), function(x){sum(climbers$beta[add_inds][[x]])}),
                                            beta = climbers$beta[add_inds],
                                            seq_ratios = climbers$seq_ratios[add_inds],
-                                           ath_imp = lapply(1:length(which(pop_data$start == years[i])), function(x){bounded_exp(1:length(n), ifelse(improve_rate_sd == 0, improve_rate_m, truncnorm::rtruncnorm(1, a = 1, mean = improve_rate_m, sd = improve_rate_sd)), improve_min)}),
+                                           ath_imp = NULL,
                                            current_record = pop_data$time[which(pop_data$start == years[i])])
+    new_climbers$ath_imp <- lapply(1:length(which(pop_data$start == years[i])), function(x){bounded_exp(1:length(n), ifelse(new_climbers$gender[x] == "M", improve_rate_m, improve_rate_w), ifelse(new_climbers$gender[x] == "M", improve_min_m, improve_min_w))})
     
     #scale athletic improvement of new climbers to keep them on same trajectory as old climbers
     new_climbers$ath_imp <- lapply(1:nrow(new_climbers), function(x){new_climbers$ath_imp[[x]]/new_climbers$ath_imp[[x]][i]})
