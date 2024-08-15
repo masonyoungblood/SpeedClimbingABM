@@ -1,6 +1,7 @@
 other
 hpcc_output
 analysis/data_and_output/01_all_params/train_data.json
+analysis/data_and_output/01_all_params/priors_and_simulations.RData
 analysis/data_and_output/03_best_params/priors_and_simulations.RData
 analysis/data_and_output/03_best_params/train_data.json
 analysis/data_and_output/05_posterior_processing/posterior_simulations.RData
