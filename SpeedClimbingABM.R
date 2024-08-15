@@ -33,15 +33,15 @@ inv_logit <- function(l){return(exp(l)/(1+exp(l)))}
 # ylim <- 0.3
 # quant_by <- 0.2
 
-#improve_min_m: (median(data$time[which(data$gender == "M" & data$year == 2019)])/15)/(median(data$time[which(data$gender == "M" & data$year == 2007)])/20)
-#improve_min_w: (median(data$time[which(data$gender == "M" & data$year == 2019)])/15)/(median(data$time[which(data$gender == "M" & data$year == 2007)])/20)
+#improve_min_m: (median(data$time[which(data$gender == "m" & data$year == 2019)])/15)/(median(data$time[which(data$gender == "m" & data$year == 2007)])/20)
+#improve_min_w: (median(data$time[which(data$gender == "w" & data$year == 2019)])/15)/(median(data$time[which(data$gender == "w" & data$year == 2007)])/20)
 
 #function for the model
 SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob, 
                              learn_prob, n_top = 10, learn_x_times = 0, learn_x_pop = 0, learn_x_year = 0,
                              innov_prob, max_dist = 1.645, constraint_a = 0, constraint_b = 0, grid,
                              innov_x_times = 0, innov_x_pop = 0, innov_x_year = 0, 
-                             improve_rate_m, improve_rate_w, improve_min_m = 0.3427374, improve_min_w = 0.3527184, sd_multiplier = 0.5, 
+                             improve_rate_m, improve_rate_w, improve_min_m = 0.4359976, improve_min_w = 0.296417, sd_multiplier = 0.5, 
                              sum_stats = TRUE, plot = TRUE, raw = FALSE, bw = 1, ylim = 0.3, quant_by = 0.1){
   #handle output booleans
   if(raw){
@@ -87,10 +87,12 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   if(sum_stats){output[[1]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
   if(!sum_stats & !raw){output[[1]] <- sort(climbers$current_record)}
   
-  #if raw output is stored, also create counter for actualized learning and innovation rate
+  #if raw output is stored, also create counter for actualized learning and innovation rate, and vector for number of unique routes over time
   if(raw){
     act_learn <- 0
     act_innov <- 0
+    n_unique_routes <- list()
+    n_unique_routes[[1]] <- as.numeric(sort(table(sapply(1:nrow(climbers), function(x){paste0(which(climbers$beta[[x]]), collapse = " ")})), decreasing = TRUE))
   }
   
   #initialize plot
@@ -248,6 +250,9 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
       lines(density(climbers$current_record, bw = bw)$x, density(climbers$current_record, bw = bw)$y, type = "l", col = colors[i-1])
     }
     
+    #if raw output is needed, then add unique number of routes to vector
+    if(raw){n_unique_routes[[i]] <- as.numeric(sort(table(sapply(1:nrow(climbers), function(x){paste0(which(climbers$beta[[x]]), collapse = " ")})), decreasing = TRUE))}
+    
     #store the output
     if(sum_stats){output[[i]] <- quantile(climbers$current_record, probs = seq(0, 1, quant_by))}
     if(!sum_stats){output[[i]] <- sort(climbers$current_record)}
@@ -260,5 +265,5 @@ SpeedClimbingABM <- function(n, years, pop_data, n_holds, beta_true_prob,
   #return output
   if(sum_stats){return(do.call(rbind, output))}
   if(!sum_stats & !raw){return(output)}
-  if(raw){return(list(climbers, act_learn = act_learn, act_innov = act_innov))}
+  if(raw){return(list(final_climbers = climbers, act_learn = act_learn, act_innov = act_innov, n_unique_routes = n_unique_routes))}
 }
