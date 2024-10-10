@@ -27,7 +27,7 @@ plot_data <- cbind(aggregate(min ~ innov_prob + learn_prob, optimality_sims, FUN
 colnames(plot_data) <- c("innov_prob", "learn_prob", "min", "median", "unique")
 
 #create heatplot of minimum times
-min_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = min)) + geom_tile() + xlab("Innovation Probability") + ylab("Learning Probability") + 
+min_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = min)) + geom_tile() + xlab("Innovation Probability") + ylab("Copying Probability") + 
   scale_fill_gradientn(name = "Time (s)", colours = c("red", "white", "blue"), values = scales::rescale(c(min(plot_data$min), median(plot_data$min), max(plot_data$min)))) +
   ggtitle(bquote(bold("Minimum Time"))) + theme_linedraw(base_size = 6) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + 
@@ -35,7 +35,7 @@ min_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = min)) +
   theme(text = element_text(family = "Avenir Next"))
 
 #create heatplot of median times
-med_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = median)) + geom_tile() + xlab("Innovation Probability") + ylab("Learning Probability") + 
+med_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = median)) + geom_tile() + xlab("Innovation Probability") + ylab("Copying Probability") + 
   scale_fill_gradientn(name = "Time (s)", colours = c("red", "white", "blue"), values = scales::rescale(c(min(plot_data$median), median(plot_data$median), max(plot_data$median)))) +
   ggtitle(bquote(bold("Median Time"))) + theme_linedraw(base_size = 6) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + 
@@ -43,7 +43,7 @@ med_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = median)
   theme(text = element_text(family = "Avenir Next"))
 
 #create heatplot of unique number of routes
-unique_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = unique)) + geom_tile() + xlab("Innovation Probability") + ylab("Learning Probability") + 
+unique_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = unique)) + geom_tile() + xlab("Innovation Probability") + ylab("Copying Probability") + 
   scale_fill_gradientn(name = "# Routes", colours = c("red", "white", "blue"), values = scales::rescale(c(min(plot_data$unique), median(plot_data$unique), max(plot_data$unique)))) +
   ggtitle(bquote(bold("Unique Routes"))) + theme_linedraw(base_size = 6) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + 
