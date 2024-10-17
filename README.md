@@ -1,6 +1,5 @@
 Speed Climbing ABM
 ================
-Mason Youngblood
 
 <img src="https://helios-i.mashable.com/imagery/articles/03XKxYMwkNiZJGiHUu2FWnw/hero-image.fill.size_1248x702.v1628089817.png" width="70%" style="display: block; margin: auto;" />
 
