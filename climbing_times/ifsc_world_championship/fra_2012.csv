@@ -1,0 +1,33 @@
+name,gender,active_since,birthdate,height_cm,weight_kg,source_a,source_b,source_c,first_final_s,hold_1,hold_2,hold_3,hold_4,hold_5,hold_6,hold_7,hold_8,hold_9,hold_10,hold_11,hold_12,hold_13,hold_14,hold_15,hold_16,hold_17,hold_18,hold_19,hold_20
+Yuliya Levochkina,w,2008,29 Mar 90,NA,NA,https://www.ifsc-climbing.org/athlete/81/yuliya-levochkina,NA,NA,9.070,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Alexandra Elmer,w,2010,10 Jun 96,170,NA,https://ifsc.results.info/athlete/1230,https://www.ifsc-climbing.org/athlete/1230/alexandra-elmer,NA,fall,1,0,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Alina Gaidamakina,w,2005,20 Sep 90,171,NA,https://www.ifsc-climbing.org/athlete/62/alina-gaidamakina,https://www.wikidata.org/wiki/Q19521760,NA,9.020,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Anouck Jaubert,w,2011,27 Jan 94,169,60,https://www.ifsc-climbing.org/athlete/479/anouck-jaubert,https://en.wikipedia.org/wiki/Anouck_Jaubert,https://www.digitalrock.de/egroupware/ranking/sitemgr/digitalrock/pstambl.html#person=10354&cat=24,9.650,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Kseniya Polekhina,w,2005,11 Feb 90,NA,NA,https://www.ifsc-climbing.org/athlete/63/kseniya-polekhina,NA,NA,9.760,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Stefanie Pichler,w,2006,24 Mar 92,NA,NA,https://www.ifsc-climbing.org/athlete/1218/stefanie-pichler,NA,NA,10.150,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Aleksandra Mirosław,w,2009,2 Feb 94,162,49,https://www.ifsc-climbing.org/athlete/2848/aleksandra-miroslaw,https://en.wikipedia.org/wiki/Aleksandra_Miros%C5%82aw,https://www.digitalrock.de/egroupware/ranking/sitemgr/digitalrock/pstambl.html#person=9493&cat=59,9.870,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,1,1,1
+Monika Prokopiuk,w,2006,22 Jul 87,NA,NA,https://www.ifsc-climbing.org/athlete/2842/monika-prokopiuk-kawecka,NA,NA,10.100,1,0,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Iuliia Kaplina,w,2011,11 May 93,165,53,https://www.ifsc-climbing.org/athlete/110/iuliia-kaplina,https://en.wikipedia.org/wiki/Iuliia_Kaplina,https://www.digitalrock.de/egroupware/ranking/sitemgr/digitalrock/pstambl.html#person=10857&cat=24,9.300,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Margot Heitz,w,2007,12 Feb 92,NA,NA,https://www.ifsc-climbing.org/athlete/452/margot-heitz,NA,NA,13.050,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Mariia Krasavina,w,2008,3 Aug 90,171,NA,https://www.ifsc-climbing.org/athlete/82/mariia-krasavina,https://www.wikidata.org/wiki/Q28001434,NA,10.630,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Edyta Ropek,w,2000,18 Nov 79,178,67,https://www.wikidata.org/wiki/Q3048839,https://cs.wikipedia.org/wiki/Edyta_Ropek,NA,9.770,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Esther Bruckner,w,2009,1 Sep 94,NA,NA,https://www.ifsc-climbing.org/athlete/458/esther-bruckner,NA,NA,8.980,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Yang Wang,w,2010,NA,NA,NA,https://www.ifsc-climbing.org/athlete/4984/yang-wang,NA,NA,fall,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Natalia Titova,w,1996,5 Sep 78,172,53,https://www.ifsc-climbing.org/athlete/40/natalia-titova,https://www.digitalrock.de/egroupware/ranking/sitemgr/digitalrock/pstambl.html#person=1304&cat=5,NA,9.470,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Klaudia Buczek,w,2008,30 Apr 91,164,50,https://www.ifsc-climbing.org/athlete/2847/klaudia-buczek,https://cs.wikipedia.org/wiki/Klaudia_Buczek,NA,fall,1,0,1,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+Libor Hroza,m,2002,30 May 87,187,72,https://cs.wikipedia.org/wiki/Libor_Hroza,NA,NA,7.280,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Stanislav Kokorin,m,2007,22 Jan 90,172,67,https://www.ifsc-climbing.org/athlete/74/stanislav-kokorin,https://en.wikipedia.org/wiki/Stanislav_Kokorin,NA,7.890,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Arsenii Shevchenko,m,2009,16 May 90,NA,NA,https://www.ifsc-climbing.org/athlete/86/arsenii-shevchenko,NA,NA,7.270,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Weng Khit Adriel Choo,m,2012,29 Jan 89,174,65,http://info2014.sat.or.th/eng/zb/ZBB101A_PH2014CL@@@@@@@ENG_number=03522.htm,NA,NA,7.310,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Marcin Dzieński,m,2007,22 Jan 93,166,65,https://www.ifsc-climbing.org/athlete/2845/marcin-dzienski,https://ifsc.results.info/athlete/2845,https://www.8a.nu/news/marcin-dzienski-the-fastest-climber-in-the-world,7.960,1,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Yaroslav Gontaryk,m,2008,8 May 93,166,NA,https://www.ifsc-climbing.org/athlete/1483/yaroslav-gontaryk,https://ifsc.results.info/athlete/1483,NA,7.060,1,0,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Leonardo Gontero,m,2009,11 Dec 93,171,60,https://www.ifsc-climbing.org/athlete/856/leonardo-gontero,https://it.wikipedia.org/wiki/Leonardo_Gontero,NA,7.210,1,0,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Dmitrii Timofeev,m,2011,7 Mar 93,NA,NA,https://www.ifsc-climbing.org/athlete/105/dmitrii-timofeev,https://www.wikidata.org/wiki/Q27985547,NA,7.170,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Zhong Qixin,m,2006,7 Apr 89,170,NA,https://www.ifsc-climbing.org/athlete/2929/qixin-zhong,https://en.wikipedia.org/wiki/Zhong_Qixin,https://www.wikidata.org/wiki/Q3412492,6.690,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Lukasz Swirk,m,2004,10 Aug 85,NA,NA,https://www.ifsc-climbing.org/athlete/4745/lukasz-swirk,NA,NA,7.180,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Danyil Boldyrev,m,2006,15 May 92,190,78,https://www.ifsc-climbing.org/athlete/1480/danyil-boldyrev,https://en.wikipedia.org/wiki/Danyil_Boldyrev,NA,6.590,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Manuel Escobar,m,1999,16 Oct 84,NA,NA,https://www.ifsc-climbing.org/athlete/3174/manuel-escobar,NA,NA,fall,1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+Sergey Abdrakhmanov,m,2005,2 Feb 90,NA,NA,https://www.ifsc-climbing.org/athlete/64/sergey-abdrakhmanov,NA,NA,fall,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1
+Sergei Sinitcyn,m,2001,4 Jun 83,NA,NA,https://www.ifsc-climbing.org/athlete/48/sergei-sinitcyn,NA,NA,6.890,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1
+Evgenii Vaitsekhovskii,m,2003,12 May 86,182,83,https://www.ifsc-climbing.org/athlete/56/evgenii-vaitsekhovskii,https://www.wikidata.org/wiki/Q466612,NA,6.710,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,0,1,1,1
+Oleksiy Yurko,m,2006,NA,NA,NA,https://www.ifsc-climbing.org/athlete/4747/oleksiy-yurko,NA,NA,8.200,1,0,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1

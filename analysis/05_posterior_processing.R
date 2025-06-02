@@ -82,6 +82,7 @@ save(posterior_simulations, file = "analysis/data_and_output/05_posterior_proces
 #load libraries for plotting
 library(ggplot2)
 library(cowplot)
+library(grid)
 
 #create function for constructing plots
 plot_constructor <- function(post, tol = 1000, xlim, bound = 0.001, two_axes = TRUE, xlabel = NULL, ylabel = NULL, xlabs = TRUE, ybuffer = 0.02, small = FALSE, font_size = 6, color){
@@ -95,7 +96,16 @@ plot_constructor <- function(post, tol = 1000, xlim, bound = 0.001, two_axes = T
     scale_y_continuous(expand = c(0, 0), limits = c(0, max(plot_data$y, na.rm = TRUE) + max(plot_data$y, na.rm = TRUE)*ybuffer)) + 
     theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank(), text = element_text(family = "Avenir Next"))
   if(small){
-    temp <- temp + theme(axis.text.y = element_blank()) + geom_vline(xintercept = 0, linetype = "dotted", size = 0.5) + ylab(ylabel)
+    temp <- temp + 
+      theme(axis.text.y = element_blank()) + 
+      geom_vline(xintercept = 0, linetype = "dotted", size = 0.5) + 
+      annotation_custom(
+        grob = textGrob(ylabel, 
+                        x = 0.01, y = 0.78,
+                        hjust = 0,
+                        gp = gpar(fontsize = 6, fontfamily = "Avenir Next"))
+      ) + 
+      ylab("Density")
   } 
   if(!xlabs){
     temp <- temp + theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank())
@@ -106,13 +116,13 @@ plot_constructor <- function(post, tol = 1000, xlim, bound = 0.001, two_axes = T
 #construct subpanels for plots
 bounds <- c(-5, 5)
 innov_prob <- plot_constructor(posterior_predictions$innov_prob, xlim = c(0, 1), xlabel = "Innovation Probability", color = "red")
-innov_x_times <- plot_constructor(posterior_predictions$innov_x_times, xlim = bounds, small = TRUE, ylabel = "Current\nRecord", color = "red")
-innov_x_pop <- plot_constructor(posterior_predictions$innov_x_pop, xlim = bounds, small = TRUE, ylabel = "Pop.\nSize", xlabel = "Effect on Innovation", color = "red")
-innov_x_year <- plot_constructor(posterior_predictions$innov_x_year, xlim = bounds, small = TRUE, ylabel = "Time\nTrend", color = "red")
+innov_x_times <- plot_constructor(posterior_predictions$innov_x_times, xlim = bounds, small = TRUE, ylabel = "Current Record", color = "red")
+innov_x_pop <- plot_constructor(posterior_predictions$innov_x_pop, xlim = bounds, small = TRUE, ylabel = "Population Size", xlabel = "Effect on Innovation", color = "red")
+innov_x_year <- plot_constructor(posterior_predictions$innov_x_year, xlim = bounds, small = TRUE, ylabel = "Time Trend", color = "red")
 learn_prob <- plot_constructor(posterior_predictions$learn_prob, xlim = c(0, 1), xlabel = "Copying Probability", color = "blue")
-learn_x_times <- plot_constructor(posterior_predictions$learn_x_times, xlim = bounds, small = TRUE, ylabel = "Current\nRecord", color = "blue")
-learn_x_pop <- plot_constructor(posterior_predictions$learn_x_pop, xlim = bounds, small = TRUE, ylabel = "Pop.\nSize", xlabel = "Effect on Copying", color = "blue")
-learn_x_year <- plot_constructor(posterior_predictions$learn_x_year, xlim = bounds, small = TRUE, ylabel = "Time\nTrend", color = "blue")
+learn_x_times <- plot_constructor(posterior_predictions$learn_x_times, xlim = bounds, small = TRUE, ylabel = "Current Record", color = "blue")
+learn_x_pop <- plot_constructor(posterior_predictions$learn_x_pop, xlim = bounds, small = TRUE, ylabel = "Population Size", xlabel = "Effect on Copying", color = "blue")
+learn_x_year <- plot_constructor(posterior_predictions$learn_x_year, xlim = bounds, small = TRUE, ylabel = "Time Trend", color = "blue")
 #improve_rate_m <- plot_constructor(posterior_predictions$improve_rate_m, xlim = c(1, 3), xlabel = "Rate of Athletic Improvement (Men)")
 #improve_rate_w <- plot_constructor(posterior_predictions$improve_rate_w, xlim = c(1, 3), xlabel = "Rate of Athletic Improvement (Women)")
 
@@ -138,10 +148,17 @@ library(ggnetwork)
 library(network)
 library(cowplot)
 library(ggplot2)
+library(ggpattern)
 #extrafont::loadfonts(quiet = TRUE)
 load("analysis/data_and_output/05_posterior_processing/posterior_simulations.RData")
-load("data.RData")
+load("analysis/data_and_output/03_best_params/priors_and_simulations.RData")
+load("climbing_times/best_climbing_times.RData"); data <- best_climbing_times; rm(best_climbing_times)
 grid <- read.csv("grid.csv")/1000
+
+#get true number of holds skipped in 2019
+skipped_2019 <- cbind(year = 2019, read.csv("climbing_times/ifsc_world_championship/jpn_2019.csv"))
+skipped_2019 <- skipped_2019[-which(is.na(rowMeans(skipped_2019[, grep("hold", colnames(skipped_2019))]))), ]
+skipped_2019 <- as.numeric(20-rowSums(skipped_2019[, grep("hold", colnames(skipped_2019))]))
 
 #get proportion of attempted innovation and learning attempts that actually happened
 actual_innovation <- mean(sapply(1:length(posterior_simulations), function(x){posterior_simulations[[x]]$act_innov/sum(sapply(2007:2019, function(y){length(unique(data$athlete[which(data$year == y)]))}))}), xlab = "", main = "")
@@ -220,6 +237,12 @@ freq_table <- aggregate(Freq ~ Var1, freq_table, FUN = sum)
 freq_table[, 1] <- 20 - freq_table[, 1]
 colnames(freq_table) <- c("skipped", "freq")
 
+#add skipped holds from 2019 to histogram data
+skipped_2019 <- data.frame(table(skipped_2019))
+colnames(skipped_2019) <- c("skipped", "freq")
+freq_table$freq_2019 <- NA
+freq_table$freq_2019[match(skipped_2019$skipped, freq_table$skipped)] <- skipped_2019$freq
+
 #compress them into an aggregated data frame
 all_routes <- do.call(rbind, lapply(1:nrow(all_routes), function(x){
   temp <- c(as.numeric(strsplit(as.character(all_routes[x, 1]), " ")[[1]]), 21)
@@ -228,28 +251,28 @@ all_routes <- do.call(rbind, lapply(1:nrow(all_routes), function(x){
 all_routes <- aggregate(weight ~ from + to, all_routes, FUN = sum)
 
 #get the frequency at which each hold is use and which hold is skipped
-skipped <- sapply(1:21, function(x){
-  temp <- all_routes$weight[which(all_routes$from == x - 1 & all_routes$to == x + 1)]
-  if(length(temp) == 0){temp <- 0}
-  return(temp)
-})
-#used <- unlist(parallel::mclapply(1:length(posterior_simulations), function(x){unlist(lapply(1:length(posterior_simulations[[x]]$beta), function(y){which(posterior_simulations[[x]]$beta[[y]])}))}, mc.cores = parallel::detectCores()-1))
-#used <- as.numeric(table(used))
-#used <- c(used, max(used))
+#skipped <- sapply(1:21, function(x){
+#  temp <- all_routes$weight[which(all_routes$from == x - 1 & all_routes$to == x + 1)]
+#  if(length(temp) == 0){temp <- 0}
+#  return(temp)
+#})
+used <- unlist(parallel::mclapply(1:length(posterior_simulations), function(x){unlist(lapply(1:length(posterior_simulations[[x]]$beta), function(y){which(posterior_simulations[[x]]$beta[[y]])}))}, mc.cores = parallel::detectCores()-1))
+used <- as.numeric(table(used))
+used <- c(used, max(used))
 
 #construct network for plotting and add attributes
 net <- network(all_routes, directed = FALSE)
 set.vertex.attribute(net, "shape", c(rep(19, 20), 17))
-set.vertex.attribute(net, attrname = "size", value = skipped)
-#set.vertex.attribute(net, attrname = "size", value = used/max(used))
+#set.vertex.attribute(net, attrname = "size", value = skipped)
+set.vertex.attribute(net, attrname = "size", value = used/max(used))
 net <- ggnetwork(net, layout = as.matrix(grid))
 
 #create plot of transition densities
 hold_plot <- ggplot(net, aes(x = x, y = y, xend = xend, yend = yend)) + 
   geom_edges(aes(linewidth = weight), curvature = -0.02) +
   geom_nodes(aes(size = size), color = "blue") + 
-  scale_size(trans = "log", range = c(0, 4), guide = NULL) + 
-  #scale_size(range = c(0, 4), guide = NULL) + 
+  #scale_size(trans = "log", range = c(0, 4), guide = NULL) + 
+  scale_size(range = c(0, 3), guide = NULL) + 
   scale_linewidth(range = c(0, 1.2), guide = NULL) + 
   xlim(-0.05, 1.05) + 
   theme_void() + 
@@ -262,15 +285,23 @@ hold_plot_axis <- ggplot(net, aes(x = x, y = y, xend = xend, yend = yend)) +
   xlim(-0.05, 1.05) + scale_y_continuous(breaks = sort(unique(net$y))[-21], labels = c(1:20), expand = c(0, 0), limits = c(-0.05, 1.05))
 
 #create bar plot of number of holds skipped
-bar_plot <- ggplot(freq_table, aes(fill = factor(1), x = skipped, y = freq)) + 
-  geom_bar(stat = "identity") + 
-  scale_fill_manual(values = c("limegreen"), name = "") + 
-  geom_vline(xintercept = 5, linetype = "dashed", size = 0.5) + 
+bar_plot <- ggplot(freq_table) + 
+  geom_bar(aes(x = skipped, y = freq, fill = "Simulated"), stat = "identity", width = 0.8) +
+  geom_bar(aes(x = skipped, y = freq_2019 * (max(freq_table$freq)/max(freq_table$freq_2019, na.rm = TRUE)), fill = "Real"), 
+           stat = "identity", width = 0.3) +
+  scale_fill_manual(values = c("Simulated" = "limegreen", "Real" = "black"), name = "") + 
   theme_linedraw(base_size = 6) + 
   xlab("# Holds Skipped") + ylab("Count") + 
   scale_x_continuous(labels = scales::number_format(accuracy = 1), breaks = c(0:9)) + 
-  scale_y_continuous(expand = c(0, 0), limits = c(0, NA), breaks = c(0, 2e5, 4e5, 6e5), labels = c("0", "0.2M", "0.4M", "0.6M")) + 
-  theme(strip.text.x = element_blank(), legend.position = "none", text = element_text(family = "Avenir Next"))
+  scale_y_continuous(expand = c(0, 0), limits = c(0, NA), breaks = c(0, 2e5, 4e5, 6e5), labels = c("0", "0.2M", "0.4M", "0.6M"),
+                     sec.axis = sec_axis(~. * (max(freq_table$freq_2019, na.rm = TRUE)/max(freq_table$freq)), name = "")) + 
+  theme(strip.text.x = element_blank(), 
+        legend.position = c(0.98, 1.04),
+        legend.justification = c(1, 1),
+        legend.background = element_blank(),
+        legend.key.size = unit(0.3, "cm"),
+        axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 0)),
+        text = element_text(family = "Avenir Next"))
 
 #construct combined object of priors, posteriors, and observed data
 temp_prior <- do.call(rbind, parallel::mclapply(1:10000, function(x){
@@ -316,7 +347,7 @@ library(cowplot)
 
 #make copy of the data for the plot of climbing times
 times_plot_data <- data
-times_plot_data$gender <- ifelse(times_plot_data$gender == "M", "Men", "Women")
+times_plot_data$gender <- ifelse(times_plot_data$gender == "m", "Men", "Women")
 
 #create plot of climbing times for men and women
 times_plot <- ggplot(data = times_plot_data, aes(x = year, y = time, color = gender)) + geom_jitter(width = 0.25, height = 0, size = 0.2) + 
