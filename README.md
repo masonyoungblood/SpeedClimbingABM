@@ -1,6 +1,8 @@
 Speed Climbing ABM
 ================
 
+[![DOI](https://zenodo.org/badge/425957708.svg)](https://doi.org/10.5281/zenodo.16905877)
+
 ![speed_climbing](https://helios-i.mashable.com/imagery/articles/03XKxYMwkNiZJGiHUu2FWnw/hero-image.fill.size_1248x702.v1628089817.png)  
 &copy; Mashable
 
