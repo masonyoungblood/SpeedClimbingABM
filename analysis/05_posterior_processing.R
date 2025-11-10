@@ -1,3 +1,6 @@
+
+#this script generates all of the posterior plots from the model
+
 #set working directory, load data, source code
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
 load("analysis/data_and_output/03_best_params/priors_and_simulations.RData")
@@ -83,6 +86,12 @@ save(posterior_simulations, file = "analysis/data_and_output/05_posterior_proces
 library(ggplot2)
 library(cowplot)
 library(grid)
+library(showtext)
+
+#set font family
+font = "Myriad Pro Condensed"
+font_add(font, regular = "/Users/masonyoungblood/Library/Fonts/MyriadPro-Cond.otf")
+showtext_auto()
 
 #create function for constructing plots
 plot_constructor <- function(post, tol = 1000, xlim, bound = 0.001, two_axes = TRUE, xlabel = NULL, ylabel = NULL, xlabs = TRUE, ybuffer = 0.02, small = FALSE, font_size = 6, color){
@@ -94,7 +103,7 @@ plot_constructor <- function(post, tol = 1000, xlim, bound = 0.001, two_axes = T
                  y = plot_data$y[which.max(plot_data$y)], yend = 0, color = color, linetype = "solid") + 
     xlim(xlim[1], xlim[2]) + xlab(xlabel) + ylab("Density") + theme_linedraw(base_size = font_size) + 
     scale_y_continuous(expand = c(0, 0), limits = c(0, max(plot_data$y, na.rm = TRUE) + max(plot_data$y, na.rm = TRUE)*ybuffer)) + 
-    theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank(), text = element_text(family = "Avenir Next"))
+    theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank(), text = element_text(family = font))
   if(small){
     temp <- temp + 
       theme(axis.text.y = element_blank()) + 
@@ -103,7 +112,7 @@ plot_constructor <- function(post, tol = 1000, xlim, bound = 0.001, two_axes = T
         grob = textGrob(ylabel, 
                         x = 0.01, y = 0.78,
                         hjust = 0,
-                        gp = gpar(fontsize = 6, fontfamily = "Avenir Next"))
+                        gp = gpar(fontsize = 6, fontfamily = font))
       ) + 
       ylab("Density")
   } 
@@ -127,7 +136,7 @@ learn_x_year <- plot_constructor(posterior_predictions$learn_x_year, xlim = boun
 #improve_rate_w <- plot_constructor(posterior_predictions$improve_rate_w, xlim = c(1, 3), xlabel = "Rate of Athletic Improvement (Women)")
 
 #set theme for cowplot
-theme_set(theme_cowplot(font_family = "Avenir Next")) 
+theme_set(theme_cowplot(font_family = font)) 
 
 #combined and save panels
 png("analysis/data_and_output/05_posterior_processing/posterior_distributions.png", units = "in", width = 7.2, height = 3, res = 1000)
@@ -141,6 +150,13 @@ plot_grid(first_row, space, second_row, ncol = 1, labels = c("A", "", "B"), rel_
 #plot_grid(first_row, space, second_row, space, third_row, ncol = 1, labels = c("A", "", "B", "", "C"), rel_heights = c(0.6, 0.02, 0.6, 0.02, 0.6))
 dev.off()
 
+#also save as eps
+ggsave(
+  "analysis/data_and_output/05_posterior_processing/posterior_distributions.eps",
+  plot_grid(first_row, space, second_row, ncol = 1, labels = c("A", "", "B"), rel_heights = c(0.6, 0.02, 0.6)),
+  width = 7.2, height = 3
+)
+
 # ROUTES AND HOLDS --------------------------------------------------------
 
 #load libraries and data
@@ -149,11 +165,17 @@ library(network)
 library(cowplot)
 library(ggplot2)
 library(ggpattern)
+library(showtext)
 #extrafont::loadfonts(quiet = TRUE)
 load("analysis/data_and_output/05_posterior_processing/posterior_simulations.RData")
 load("analysis/data_and_output/03_best_params/priors_and_simulations.RData")
 load("climbing_times/best_climbing_times.RData"); data <- best_climbing_times; rm(best_climbing_times)
 grid <- read.csv("grid.csv")/1000
+
+#set font family
+font = "Myriad Pro Condensed"
+font_add(font, regular = "/Users/masonyoungblood/Library/Fonts/MyriadPro-Cond.otf")
+showtext_auto()
 
 #get true number of holds skipped in 2019
 skipped_2019 <- cbind(year = 2019, read.csv("climbing_times/ifsc_world_championship/jpn_2019.csv"))
@@ -189,7 +211,7 @@ even_plot <- ggplot() +
   ylab(expression(Evenness~(D^{"q=2"}~-~1)/(D^{"q=0"}~-~1))) + 
   scale_x_continuous(name = "Year", breaks = 1:max(diversity_data$t), labels = (2019-max(diversity_data$t)+1):2019, limits = c(1, max(diversity_data$t)), expand = c(0, 0)) + 
   theme_linedraw(base_size = 6) + 
-  theme(text = element_text(family = "Avenir Next"), plot.margin = margin(5.5, 11, 5.5, 5.5))
+  theme(text = element_text(family = font), plot.margin = margin(5.5, 11, 5.5, 5.5))
 
 #create diversity plot
 div_med <- data.frame(x = 1:max(diversity_data$t), y = sapply(1:max(diversity_data$t), function(x){median(diversity_data$q2[which(diversity_data$t == x)])}))
@@ -199,7 +221,7 @@ div_plot <- ggplot() +
   ylab(expression(Shannon~Diversity~(D^{"q=2"}))) + 
   scale_x_continuous(name = "Year", breaks = 1:max(diversity_data$t), labels = (2019-max(diversity_data$t)+1):2019, limits = c(1, max(diversity_data$t)), expand = c(0, 0)) + 
   theme_linedraw(base_size = 6) + 
-  theme(text = element_text(family = "Avenir Next"), plot.margin = margin(5.5, 11, 5.5, 5.5))
+  theme(text = element_text(family = font), plot.margin = margin(5.5, 11, 5.5, 5.5))
 
 #create richness plot
 rich_med <- data.frame(x = 1:max(diversity_data$t), y = sapply(1:max(diversity_data$t), function(x){median(diversity_data$q0[which(diversity_data$t == x)])}))
@@ -209,15 +231,22 @@ rich_plot <- ggplot() +
   ylab(expression(Richness~(D^{"q=0"}))) + 
   scale_x_continuous(name = "Year", breaks = 1:max(diversity_data$t), labels = (2019-max(diversity_data$t)+1):2019, limits = c(1, max(diversity_data$t)), expand = c(0, 0)) + 
   theme_linedraw(base_size = 6) + 
-  theme(text = element_text(family = "Avenir Next"), plot.margin = margin(5.5, 11, 5.5, 5.5))
+  theme(text = element_text(family = font), plot.margin = margin(5.5, 11, 5.5, 5.5))
 
 #set theme for cowplot
-theme_set(theme_cowplot(font_family = "Avenir Next")) 
+theme_set(theme_cowplot(font_family = font)) 
 
 #export richness and diversity plots
 png("analysis/data_and_output/05_posterior_processing/diversity.png", units = "in", width = 7.2, height = 2.6, res = 1000)
 plot_grid(rich_plot, div_plot, labels = c("A", "B"))
 dev.off()
+
+#also save as eps
+ggsave(
+  "analysis/data_and_output/05_posterior_processing/diversity.eps",
+  plot_grid(rich_plot, div_plot, labels = c("A", "B")),
+  width = 7.2, height = 2.6, device = cairo_ps
+)
 
 #simplify posterior simulations to remove actual innovation and learning
 posterior_simulations <- lapply(1:length(posterior_simulations), function(x){posterior_simulations[[x]][[1]]})
@@ -281,7 +310,7 @@ hold_plot <- ggplot(net, aes(x = x, y = y, xend = xend, yend = yend)) +
 #create empty plot to store the axis alone
 hold_plot_axis <- ggplot(net, aes(x = x, y = y, xend = xend, yend = yend)) + 
   theme_linedraw(base_size = 6) + 
-  theme(text = element_text(family = "Avenir Next")) + 
+  theme(text = element_text(family = font)) + 
   xlim(-0.05, 1.05) + scale_y_continuous(breaks = sort(unique(net$y))[-21], labels = c(1:20), expand = c(0, 0), limits = c(-0.05, 1.05))
 
 #create bar plot of number of holds skipped
@@ -301,7 +330,7 @@ bar_plot <- ggplot(freq_table) +
         legend.background = element_blank(),
         legend.key.size = unit(0.3, "cm"),
         axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 0)),
-        text = element_text(family = "Avenir Next"))
+        text = element_text(family = font))
 
 #construct combined object of priors, posteriors, and observed data
 temp_prior <- do.call(rbind, parallel::mclapply(1:10000, function(x){
@@ -321,15 +350,16 @@ curve_data <- rbind(temp_prior, temp_posterior_a, temp_posterior_b, temp_observe
 
 #create plot that includes priors, posteriors, and observed data
 curve_plot <- ggplot(curve_data, aes(x = x, y = y, group = paste0(a, b), color = as.factor(a))) + 
-  geom_line() + xlim(0, 25) +
+  ggrastr::rasterise(geom_line(), dpi = 1000) + 
+  xlim(0, 25) +
   scale_linewidth_manual(values = c(5, 0.5, 0.5, 1)) + 
   scale_linetype_manual(values = c("solid", "solid", "solid", "dashed")) + 
   scale_color_manual(values = c(scales::alpha("gray88", 1), scales::alpha("white", 0.02), scales::alpha("red", 0.01), "black")) +
-  theme_linedraw(base_size = 6) + theme(legend.position = "none", text = element_text(family = "Avenir Next")) + xlab("Climbing Times (s)") + ylab("Density") + 
+  theme_linedraw(base_size = 6) + theme(legend.position = "none", text = element_text(family = font)) + xlab("Climbing Times (s)") + ylab("Density") + 
   scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
 
 #process things for cowplot
-theme_set(theme_cowplot(font_family = "Avenir Next")) 
+theme_set(theme_cowplot(font_family = font)) 
 plot_a <- plot_grid(plot_grid(NULL), curve_plot, nrow = 1, rel_widths = c(0.06, 1))
 plot_a_b <- plot_grid(plot_a, plot_grid(plot_grid(NULL), bar_plot, rel_widths = c(0.06, 1)), nrow = 2, rel_heights = c(1.5, 1), labels = c("A", "B"))
 plot_c <- plot_grid(get_y_axis(hold_plot_axis), hold_plot, nrow = 1, rel_widths = c(0.2, 1, 0.2, 1))
@@ -339,11 +369,24 @@ png("analysis/data_and_output/05_posterior_processing/times_holds_routes.png", u
 plot_grid(plot_a_b, plot_c, nrow = 1, labels = c("", "C"), rel_widths = c(2, 0.8))
 dev.off()
 
+#also save as eps
+ggsave(
+  "analysis/data_and_output/05_posterior_processing/times_holds_routes.eps",
+  plot_grid(plot_a_b, plot_c, nrow = 1, labels = c("", "C"), rel_widths = c(2, 0.8)),
+  width = 3.5, height = 3, device = cairo_ps
+)
+
 # CLIMBING TIMES ----------------------------------------------------------
 
 #load libraries for plotting
 library(ggplot2)
 library(cowplot)
+library(showtext)
+
+#set font family
+font = "Myriad Pro Condensed"
+font_add(font, regular = "/Users/masonyoungblood/Library/Fonts/MyriadPro-Cond.otf")
+showtext_auto()
 
 #make copy of the data for the plot of climbing times
 times_plot_data <- data
@@ -357,12 +400,12 @@ times_plot <- ggplot(data = times_plot_data, aes(x = year, y = time, color = gen
   scale_color_manual(values = c("blue", "red")) + theme(legend.title = element_blank(), 
                                                         legend.position = c(0.825, 0.845), 
                                                         legend.background = element_blank(),
-                                                        legend.key=element_blank(),
+                                                        legend.key = element_blank(),
                                                         panel.grid.minor.x = element_blank(),
-                                                        text = element_text(family = "Avenir Next"))
+                                                        text = element_text(family = font))
 
 #create speed wall plot with adjustable buffers
-theme_set(theme_cowplot(font_family = "Avenir Next")) 
+theme_set(theme_cowplot(font_family = font)) 
 speed_wall <- plot_grid(ggplot(NULL) + theme_void(), 
                         plot_grid(ggplot(NULL) + theme_void(), 
                                   ggdraw() + draw_image("speed_wall.png"), 
@@ -374,3 +417,10 @@ speed_wall <- plot_grid(ggplot(NULL) + theme_void(),
 png("analysis/data_and_output/05_posterior_processing/climbing_times.png", width = 5, height = 3, units = "in", res = 1000)
 plot_grid(speed_wall, times_plot, labels = c("A", "B"), rel_widths = c(0.4, 1))
 dev.off()
+
+#also save as eps
+ggsave(
+  "analysis/data_and_output/05_posterior_processing/climbing_times.eps",
+  plot_grid(speed_wall, times_plot, labels = c("A", "B"), rel_widths = c(0.4, 1)),
+  width = 5, height = 3
+)

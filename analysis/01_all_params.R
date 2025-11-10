@@ -1,3 +1,7 @@
+
+#this script runs the agent-based model with all parameters varied, to assess
+#whether some parameters can be dropped from the final model
+
 #set working directory, load data, source code
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
 load("climbing_times/best_climbing_times.RData"); data <- best_climbing_times; rm(best_climbing_times)

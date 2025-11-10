@@ -1,3 +1,7 @@
+
+#this script statistically models and then plots the manually-transcribed 
+#climbing sequences from ifsc events
+
 # MODELING ----------------------------------------------------------------
 
 #load libraries
@@ -8,6 +12,12 @@ library(parallel)
 library(posterior)
 library(car)
 library(lme4)
+library(showtext)
+
+#set font family
+font = "Myriad Pro Condensed"
+font_add(font, regular = "/Users/masonyoungblood/Library/Fonts/MyriadPro-Cond.otf")
+showtext_auto()
 
 #set working directory
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
@@ -231,6 +241,12 @@ library(tidyverse)
 library(ggplot2)
 library(patchwork)
 library(cowplot)
+library(showtext)
+
+#set font family
+font = "Myriad Pro Condensed"
+font_add(font, regular = "/Users/masonyoungblood/Library/Fonts/MyriadPro-Cond.otf")
+showtext_auto()
 
 #set working directory
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
@@ -359,11 +375,13 @@ for(athlete in ordered_names) {
     labs(x = NULL, y = NULL) +
     theme_minimal(base_size = 6) +
     theme(
-      text = element_text(family = "Avenir Next"),
+      text = element_text(family = font),
       plot.title = element_text(size = 6),
       panel.spacing = unit(1, "lines"),
       axis.ticks.y = element_line(color = "black"),
       axis.ticks.x = element_line(color = "black"),
+      axis.text.y = element_text(color = "black"),
+      axis.text.x = element_text(color = "black"),
       legend.position = "none",
       panel.grid = element_blank()
     ) +
@@ -375,7 +393,7 @@ for(athlete in ordered_names) {
 
 #create a legend plot for the bottom right slot
 legend_plot <- ggplot(data.frame(gender = c("Men", "Women"), y = c(1, 2)), aes(x = 1, y = y)) +
-  geom_text(aes(label = gender), color = c("blue", "red"), family = "Avenir Next", fontface = "bold", size = 2) +
+  geom_text(aes(label = gender), color = c("blue", "red"), family = font, fontface = "bold", size = 2) +
   scale_y_continuous(limits = c(-1, 4)) + 
   theme_void(base_size = 6)
 
@@ -454,18 +472,27 @@ heatmap_plot <- ggplot(hold_skip_proportions, aes(y = hold_number, x = factor(ye
   ggtitle("") + 
   theme_minimal(base_size = 6) +
   theme(
-    text = element_text(family = "Avenir Next"),
+    text = element_text(family = font),
     axis.ticks.y = element_line(color = "black"),
     axis.ticks.x = element_line(color = "black"),
+    axis.text.y = element_text(color = "black"),
+    axis.text.x = element_text(color = "black"),
     legend.position = "right",
     panel.grid = element_blank()
   ) +
   coord_cartesian(ylim = c(0.5, 20.5))
 
 #set theme for cowplot
-theme_set(theme_cowplot(font_family = "Avenir Next")) 
+theme_set(theme_cowplot(font_family = font)) 
 
 #combined and save panels
 png("analysis/data_and_output/08_ifsc_world_championship/route_maps.png", units = "in", width = 4.5, height = 2, res = 1000)
 cowplot::plot_grid(athletes_plot, ggplot(NULL) + theme_void(), heatmap_plot, labels = c("A", "B", ""), rel_widths = c(1, 0.04, 0.7), nrow = 1)
 dev.off()
+
+#also save as eps
+ggsave(
+  "analysis/data_and_output/08_ifsc_world_championship/route_maps.eps",
+  cowplot::plot_grid(athletes_plot, ggplot(NULL) + theme_void(), heatmap_plot, labels = c("A", "B", ""), rel_widths = c(1, 0.04, 0.7), nrow = 1),
+  width = 4.5, height = 2
+)

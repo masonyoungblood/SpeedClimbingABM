@@ -1,3 +1,6 @@
+
+#this script constructs a heatmap of the results from the optimality simulations
+
 #set working directory and load data and libraries for plotting
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
 load("analysis/data_and_output/06_optimality_sims/optimality_sims.RData")
@@ -5,6 +8,12 @@ load("analysis/data_and_output/03_best_params/priors_and_simulations.RData")
 posterior_predictions <- jsonlite::read_json("analysis/data_and_output/04_best_params_inference/posterior_predictions.json")
 library(ggplot2)
 library(cowplot)
+library(showtext)
+
+#set font family
+font = "Myriad Pro Condensed"
+font_add(font, regular = "/Users/masonyoungblood/Library/Fonts/MyriadPro-Cond.otf")
+showtext_auto()
 
 #convert posteriors to usable table format
 posterior_predictions <- jsonlite::read_json("analysis/data_and_output/04_best_params_inference/posterior_predictions.json")
@@ -32,7 +41,7 @@ min_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = min)) +
   ggtitle(bquote(bold("Minimum Time"))) + theme_linedraw(base_size = 6) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + 
   geom_point(aes(x = coords[1], y = coords[2]), size = 3) +
-  theme(text = element_text(family = "Avenir Next"))
+  theme(text = element_text(family = font))
 
 #create heatplot of median times
 med_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = median)) + geom_tile() + xlab("Innovation Probability") + ylab("Copying Probability") + 
@@ -40,7 +49,7 @@ med_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = median)
   ggtitle(bquote(bold("Median Time"))) + theme_linedraw(base_size = 6) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + 
   geom_point(aes(x = coords[1], y = coords[2]), size = 3) +
-  theme(text = element_text(family = "Avenir Next"))
+  theme(text = element_text(family = font))
 
 #create heatplot of unique number of routes
 unique_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = unique)) + geom_tile() + xlab("Innovation Probability") + ylab("Copying Probability") + 
@@ -48,7 +57,7 @@ unique_plot <- ggplot(plot_data, aes(x = innov_prob, y = learn_prob, fill = uniq
   ggtitle(bquote(bold("Unique Routes"))) + theme_linedraw(base_size = 6) + 
   scale_x_continuous(expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) + 
   geom_point(aes(x = coords[1], y = coords[2]), size = 3) +
-  theme(text = element_text(family = "Avenir Next"))
+  theme(text = element_text(family = font))
 
 #export
 png("analysis/data_and_output/07_optimality_processing/optimality_heatmaps.png", units = "in", width = 7.2, height = 1.9, res = 1000)
@@ -60,3 +69,16 @@ plot_grid(min_plot + theme(legend.position = "none"),
           get_legend(unique_plot),
           nrow = 1, rel_widths = c(1, 0.3, 1, 0.3, 1, 0.3))
 dev.off()
+
+#also save as eps
+ggsave(
+  "analysis/data_and_output/07_optimality_processing/optimality_heatmaps.eps",
+  plot_grid(min_plot + theme(legend.position = "none"),
+            get_legend(min_plot),
+            med_plot + theme(legend.position = "none"),
+            get_legend(med_plot),
+            unique_plot + theme(legend.position = "none"),
+            get_legend(unique_plot),
+            nrow = 1, rel_widths = c(1, 0.3, 1, 0.3, 1, 0.3)),
+  width = 7.2, height = 1.9
+)

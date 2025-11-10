@@ -1,3 +1,7 @@
+
+#this script runs the agent-based model with only some parameters varied, to be
+#used as input for the final round of simulation-based inference
+
 #set working directory, load data, source code
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
 load("climbing_times/best_climbing_times.RData"); data <- best_climbing_times; rm(best_climbing_times)

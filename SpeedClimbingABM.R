@@ -1,4 +1,7 @@
 
+#this script contains the source code for the agent-based model that was used
+#for simulation-based inference.
+
 # FUNCTIONS ---------------------------------------------------------------
 
 #bounded exponential function for athletic improvement

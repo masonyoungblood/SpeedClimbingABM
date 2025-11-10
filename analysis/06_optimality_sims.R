@@ -1,3 +1,7 @@
+
+#this script runs models across different parameter values to assess whether
+#actual behavior differs from theoretically optimal behavior
+
 #set working directory, load data, source code
 setwd("/Users/masonyoungblood/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM")
 load("analysis/data_and_output/03_best_params/priors_and_simulations.RData")

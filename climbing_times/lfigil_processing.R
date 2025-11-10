@@ -1,4 +1,8 @@
-#from https://github.com/lfigil/ifsc-data collected by lfigil on February 1, 2024
+
+#this script converts the raw data on climbing times from ifsc events, from
+#https://github.com/lfigil/ifsc-data collected by lfigil on february 1, 2024,
+#into the rdata files used as input to the simulation
+
 #we manually checked whether the data include all world cups and championships from 2007 to 2019
 #only missing the 2007 world championships in aviles, which we will add manually: https://ifsc.results.info/#/event/481/
 

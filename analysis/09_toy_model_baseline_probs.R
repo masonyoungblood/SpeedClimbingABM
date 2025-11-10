@@ -1,3 +1,7 @@
+
+#this script is a toy model to demonstrate that our approach to modeling
+#interactions leads to the intended behavior
+
 #set working directory
 setwd("~/Documents/Work/Summer_2021/Speed Climbing/SpeedClimbingABM/other/submissions/proc_b/revision_3")
 
