@@ -365,11 +365,23 @@ speed climbers, and incorporates parameters for athletic improvement,
 innovation of “beta” (or route sequence), and copying of other climbers’
 beta. Here are the locations of various files in the repository:</p>
 <ul>
-<li>Climbing times used for simulation:
-<code>climbing_times/best_climbing_times.RData</code></li>
-<li>Manually-transcribed climbing sequences from IFSC World
-Championships: <code>climbing_times/ifsc_world_championship</code></li>
-<li>Full simulation-based inference pipeline: <code>analysis</code></li>
+<li><code>climbing_times/all_climbing_times.RData</code>: all climbing
+times for all competitors in each year.</li>
+<li><code>climbing_times/best_climbing_times.RData</code>: best climbing
+time for each competitor in each year (used for simulation).</li>
+<li><code>climbing_times/ifsc_world_championship</code> and
+<code>climbing_times/ifsc_world_championship.numbers</code>:
+manually-transcribed climbing sequences from IFSC events.</li>
+<li><code>climbing_times/lfigil_ifsc_data</code> and
+<code>lfigil_processing.R</code>: climbing times from IFSC events
+(collected by <a href="https://github.com/lfigil/ifsc-data">lfigil</a>)
+and a processing script to convert them to the RData files.</li>
+<li><code>analysis</code>: full simulation-based inference
+pipeline.</li>
+<li><code>SpeedClimbingABM.R</code>: source code for the agent-based
+model.</li>
+<li><code>grid.csv</code> and <code>speed_wall.png</code>: coordinates
+and visualization of each hold on the route.</li>
 </ul>
 <p>Files over 100 MB are ignored to avoid GitHub limit problems.</p>
 </div>
