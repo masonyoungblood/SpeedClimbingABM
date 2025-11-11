@@ -3,14 +3,12 @@
         {
             "name": "Youngblood, Mason",
             "orcid": "0000-0003-2123-1716",
-            "affiliation": "Stony Brook University",
-            "type": "ProjectMember"
+            "affiliation": "Stony Brook University"
         },
         {
             "name": "Passmore, Sam",
             "orcid": "0000-0002-5302-356X",
-            "affiliation": "Australian National University",
-            "type": "ProjectMember"
+            "affiliation": "Australian National University"
         }
     ],
     "title": "Speed Climbing ABM",
