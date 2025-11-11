@@ -1,0 +1,14 @@
+cff-version: 1.0
+title: "Speed Climbing ABM"
+version: 1.0
+type: software
+abstract: "These are the scripts used to simulate a memory bus"
+authors:
+  - given-names: Mason
+    family-names: Youngblood
+    affiliation: Stony Brook University
+    orcid: "https://orcid.org/0000-0003-2123-1716"
+  - given-names: Sam
+    family-names: Passmore
+    affiliation: Australian National University
+    orcid: "https://orcid.org/0000-0002-5302-356X"
